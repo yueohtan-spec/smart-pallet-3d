@@ -1,0 +1,4326 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Pallet 3D - Hệ Thống Đóng Kiện Vận Tải & Chêm Lót Carton Chuẩn Hóa</title>
+  <!-- Three.js & OrbitControls via CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    if (typeof THREE === 'undefined') {
+      document.write('<script src="https://unpkg.com/three@0.128.0/build/three.min.js"><\/script>');
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script>
+    if (typeof THREE !== 'undefined' && typeof THREE.OrbitControls === 'undefined') {
+      document.write('<script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"><\/script>');
+    }
+  </script>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-light: #dbeafe;
+      --accent: #10b981;
+      --accent-hover: #059669;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --dunnage: #b45309;
+      --dunnage-light: #fef3c7;
+      --kraft: #d97706;
+      --slate-50: #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-200: #e2e8f0;
+      --slate-300: #cbd5e1;
+      --slate-600: #475569;
+      --slate-700: #334155;
+      --slate-800: #1e293b;
+      --slate-900: #0f172a;
+      --font: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font);
+      background-color: var(--slate-100);
+      color: var(--slate-800);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    header {
+      background: #ffffff;
+      border-bottom: 1px solid var(--slate-200);
+      padding: 10px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      z-index: 10;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, var(--primary), #3b82f6);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 20px;
+    }
+
+    .brand-text h1 {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--slate-900);
+      line-height: 1.2;
+    }
+
+    .brand-text p {
+      font-size: 11px;
+      color: var(--slate-600);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .main-container {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 500px 1fr;
+      height: calc(100vh - 61px);
+      overflow: hidden;
+    }
+
+    .sidebar {
+      background: #ffffff;
+      border-right: 1px solid var(--slate-200);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 16px 20px;
+      gap: 14px;
+    }
+
+    .section-card {
+      background: #ffffff;
+      border: 1px solid var(--slate-200);
+      border-radius: 10px;
+      padding: 14px 16px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+
+    .section-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--slate-900);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .badge-rule {
+      font-size: 10px;
+      background: #dbeafe;
+      color: #1e40af;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-weight: 600;
+    }
+
+    .input-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--slate-700);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    label span.unit {
+      color: var(--slate-600);
+      font-weight: 400;
+    }
+
+    input, select {
+      padding: 7px 10px;
+      border: 1px solid var(--slate-300);
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--slate-800);
+      background-color: var(--slate-50);
+      transition: all 0.15s ease;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+      background-color: #fff;
+      box-shadow: 0 0 0 2px var(--primary-light);
+    }
+
+    .preset-pills {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .pill-btn {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--slate-300);
+      background: var(--slate-50);
+      color: var(--slate-700);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .pill-btn:hover {
+      background: var(--primary-light);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    /* Option Boxes */
+    .compaction-box {
+      background: #f0fdf4;
+      border: 1px dashed var(--accent);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-top: 8px;
+    }
+
+    .dunnage-box {
+      background: #fffbeb;
+      border: 1px dashed var(--dunnage);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-top: 8px;
+    }
+
+    .sub-pallet-box {
+      background: #f8fafc;
+      border: 1px solid var(--slate-300);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-top: 8px;
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--slate-800);
+      cursor: pointer;
+    }
+
+    .checkbox-row input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+
+    /* Table Styles */
+    .sku-table-container {
+      overflow-x: auto;
+      margin-bottom: 8px;
+      max-height: 190px;
+    }
+
+    table.sku-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+
+    table.sku-table th {
+      background: var(--slate-100);
+      color: var(--slate-700);
+      font-weight: 600;
+      padding: 6px 4px;
+      text-align: center;
+      border-bottom: 1px solid var(--slate-200);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    table.sku-table td {
+      padding: 4px 2px;
+      text-align: center;
+      border-bottom: 1px solid var(--slate-200);
+    }
+
+    table.sku-table input[type="number"],
+    table.sku-table input[type="text"] {
+      width: 100%;
+      padding: 4px;
+      font-size: 11px;
+      text-align: center;
+      background: #fff;
+    }
+
+    table.sku-table input[type="color"] {
+      width: 22px;
+      height: 22px;
+      border: none;
+      padding: 0;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 0 auto;
+    }
+
+    .btn-icon {
+      background: transparent;
+      border: none;
+      color: var(--danger);
+      cursor: pointer;
+      font-size: 13px;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+
+    .btn-icon:hover {
+      background: #fee2e2;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 7px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-primary {
+      background-color: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--primary-hover);
+    }
+
+    .btn-accent {
+      background: linear-gradient(135deg, var(--accent), #059669);
+      color: white;
+    }
+
+    .btn-accent:hover {
+      background: linear-gradient(135deg, #059669, #047857);
+    }
+
+    .btn-outline {
+      background: white;
+      border-color: var(--slate-300);
+      color: var(--slate-700);
+    }
+
+    .btn-outline:hover {
+      background: var(--slate-100);
+    }
+
+    .btn-sm {
+      padding: 4px 8px;
+      font-size: 11px;
+    }
+
+    .btn-block {
+      width: 100%;
+    }
+
+    .action-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 2px;
+    }
+
+    /* Viewport Area */
+    .viewport-area {
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      background: #f8fafc;
+      overflow: hidden;
+    }
+
+    /* Top Pallet Tabs Bar */
+    .pallet-tabs-bar {
+      background: #ffffff;
+      border-bottom: 1px solid var(--slate-200);
+      padding: 6px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 5;
+    }
+
+    .pallet-tabs {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .pallet-tab {
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid var(--slate-200);
+      background: var(--slate-50);
+      color: var(--slate-700);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .pallet-tab.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+      box-shadow: 0 1px 2px rgba(37,99,235,0.2);
+    }
+
+    /* KPI Bar */
+    .kpi-bar {
+      background: white;
+      border-bottom: 1px solid var(--slate-200);
+      padding: 8px 20px;
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+      z-index: 5;
+    }
+
+    .kpi-card {
+      background: var(--slate-50);
+      border: 1px solid var(--slate-200);
+      border-radius: 8px;
+      padding: 6px 10px;
+    }
+
+    .kpi-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--slate-600);
+      margin-bottom: 2px;
+    }
+
+    .kpi-value {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--slate-900);
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+
+    .kpi-sub {
+      font-size: 10px;
+      color: var(--slate-600);
+      font-weight: 400;
+    }
+
+    /* Layer Slicing Toolbar */
+    .layer-slicing-bar {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(6px);
+      border: 1px solid var(--slate-200);
+      border-radius: 8px;
+      padding: 6px 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 8px -2px rgba(0,0,0,0.1);
+      z-index: 6;
+    }
+
+    .layer-slicing-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--slate-800);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .layer-buttons {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+
+    .layer-btn {
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      background: white;
+      border: 1px solid var(--slate-300);
+      border-radius: 5px;
+      cursor: pointer;
+      color: var(--slate-700);
+      transition: all 0.15s;
+    }
+
+    .layer-btn:hover {
+      background: var(--primary-light);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .layer-btn.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    /* 3D Canvas */
+    .canvas-wrapper {
+      flex: 1;
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at center, #f1f5f9 0%, #cbd5e1 100%);
+    }
+
+    #threeCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .view-controls {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(4px);
+      border: 1px solid var(--slate-200);
+      border-radius: 8px;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+      z-index: 5;
+    }
+
+    .view-controls button {
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      background: white;
+      border: 1px solid var(--slate-200);
+      border-radius: 5px;
+      cursor: pointer;
+      color: var(--slate-700);
+    }
+
+    .view-controls button:hover {
+      background: var(--primary-light);
+      color: var(--primary);
+      border-color: var(--primary);
+    }
+
+    /* Legend Box */
+    .legend-box {
+      position: absolute;
+      bottom: 14px;
+      left: 14px;
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(4px);
+      border: 1px solid var(--slate-200);
+      border-radius: 8px;
+      padding: 8px 12px;
+      max-height: 140px;
+      overflow-y: auto;
+      font-size: 11px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      z-index: 5;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+
+    .legend-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+    }
+
+    /* Tooltip */
+    #tooltip {
+      position: absolute;
+      display: none;
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: blur(4px);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      pointer-events: none;
+      z-index: 20;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+      line-height: 1.4;
+    }
+
+    /* Player Bar */
+    .player-bar {
+      background: white;
+      border-top: 1px solid var(--slate-200);
+      padding: 6px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      z-index: 5;
+    }
+
+    .slider-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .slider-container input[type="range"] {
+      flex: 1;
+      accent-color: var(--primary);
+    }
+
+    /* Alert Banner */
+    .alert-banner {
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      margin-top: 4px;
+      display: none;
+      line-height: 1.4;
+    }
+
+    .alert-success {
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #a7f3d0;
+    }
+
+    .alert-warning {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fde68a;
+    }
+
+    /* Modal 2D Blueprint */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      width: 92%;
+      max-width: 980px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.25);
+      overflow: hidden;
+    }
+
+    .modal-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--slate-200);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--slate-50);
+    }
+
+    .modal-header h2 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--slate-900);
+    }
+
+    .modal-close {
+      background: transparent;
+      border: none;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--slate-600);
+      cursor: pointer;
+    }
+
+    .modal-body {
+      padding: 16px 20px;
+      overflow-y: auto;
+      display: flex;
+      gap: 20px;
+    }
+
+    .blueprint-canvas-box {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: #f8fafc;
+      border: 1px solid var(--slate-200);
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    #blueprintCanvas {
+      background: #ffffff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      border: 1px solid var(--slate-300);
+    }
+
+    .blueprint-info-pane {
+      width: 320px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .blueprint-layer-tabs {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+
+    .blueprint-layer-tab {
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      border: 1px solid var(--slate-300);
+      background: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .blueprint-layer-tab.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    /* Print Styles */
+    @media print {
+      body {
+        overflow: visible;
+        background: white;
+      }
+      .main-container, header, .header-actions, .player-bar, .view-controls, .layer-slicing-bar {
+        display: none !important;
+      }
+      #printReportArea {
+        display: block !important;
+        padding: 20px;
+      }
+    }
+
+    #printReportArea {
+      display: none;
+    }
+  
+    /* Manual Stacking Studio & Dunnage Controls */
+    .manual-studio-box {
+      background: var(--slate-50);
+      border: 1px solid var(--slate-200);
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    .selected-box-card {
+      background: #fffbeb;
+      border: 1.5px solid #f59e0b;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 10px;
+      animation: fadeIn 0.2s ease-in-out;
+    }
+    .btn-dunnage-toggle {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1.5px solid #f59e0b;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-dunnage-toggle:hover {
+      background: #fde68a;
+    }
+
+
+    /* Floating 3D HUD Rotation & Manipulation Toolbar */
+    .hud-btn {
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      color: white;
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .hud-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      border-color: #f59e0b;
+      color: #fbbf24;
+      transform: translateY(-1px);
+    }
+    .hud-btn.hud-del {
+      background: rgba(239, 68, 68, 0.3);
+      border-color: rgba(239, 68, 68, 0.6);
+      color: #fca5a5;
+    }
+    .hud-btn.hud-del:hover {
+      background: #ef4444;
+      color: white;
+      border-color: #ef4444;
+    }
+    .hud-btn.hud-down {
+      background: rgba(59, 130, 246, 0.25);
+      border-color: rgba(59, 130, 246, 0.5);
+      color: #93c5fd;
+    }
+    .hud-btn.hud-up {
+      background: rgba(16, 185, 129, 0.25);
+      border-color: rgba(16, 185, 129, 0.5);
+      color: #6ee7b7;
+    }
+
+</style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="brand-logo">P</div>
+      <div class="brand-text">
+        <h1>Smart Pallet 3D - Hệ Thống Đóng Kiện Vận Tải & Chêm Lót Carton</h1>
+        <p>Phủ kín &ge;90% • Chêm lót carton bù khoảng trống • Chống lơ lửng 100% • Tự động chuyển Pallet phụ</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-outline btn-sm" onclick="openBlueprintModal()">
+        🗺️ Sơ Đồ Cắt Lớp 2D
+      </button>
+      <button class="btn btn-outline btn-sm" onclick="loadSampleData()">
+        📋 Tải dữ liệu mẫu
+      </button>
+      <button class="btn btn-outline btn-sm" onclick="triggerPrintReport()">
+        🖨️ In Hướng Dẫn Đóng Gói
+      </button>
+    </div>
+  </header>
+
+  <div class="main-container">
+
+    <!-- Left Sidebar -->
+    <div class="sidebar">
+
+      <!-- Section 1: Pallet Specs -->
+      <div class="section-card">
+        <div class="section-title">
+          <span>📦 1. Pallet Chính (#1) & Ép Khít</span>
+          <span class="badge-rule">Chuẩn Phủ &ge;90%</span>
+        </div>
+
+        <!-- Packing Style Selector -->
+        <div class="packing-mode-box" style="background: #ecfdf5; border: 1.5px solid #10b981; border-radius: 8px; padding: 10px; margin-bottom: 12px;">
+          <div style="font-size: 11px; font-weight: 700; color: #065f46; margin-bottom: 6px; text-transform: uppercase;">
+            🎯 Chế Độ Xếp Hàng Ưu Tiên:
+          </div>
+          <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer; margin-bottom: 6px;">
+            <input type="radio" name="packingStyle" id="optStyle1" value="style1" checked onchange="calculatePallet()">
+            <div>
+              <b style="color: #047857; font-size: 12px;">⭐ Kiểu 1 (Ưu Tiên): Đóng Khối Vuông Phẳng Tuyệt Đối</b>
+              <div style="font-size: 10.5px; color: #065f46; line-height: 1.35; margin-top: 2px;">
+                Phủ kín tối đa từng tầng từ dưới lên, ưu tiên dùng thùng nhỏ lấp khe hở, tự động chèn bìa carton để 4 cạnh và mặt trên phẳng vuông vức (Chuẩn hãng bay/vận chuyển quốc tế).
+              </div>
+            </div>
+          </label>
+          <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer;">
+            <input type="radio" name="packingStyle" id="optStyle2" value="style2" onchange="calculatePallet()">
+            <div>
+              <b style="color: #475569; font-size: 12px;">Kiểu 2: Xếp Bậc Thang Tự Nhiên (Không chêm đỉnh)</b>
+              <div style="font-size: 10.5px; color: #64748b; line-height: 1.35; margin-top: 2px;">
+                Xếp theo cụm thùng tự nhiên, không chèn bìa carton phẳng đỉnh tầng chóp.
+              </div>
+            </div>
+          </label>
+        </div>
+
+        <div class="preset-pills">
+          <button class="pill-btn" onclick="applyPreset(1500, 900, 150, 1200, 1200)">Pallet 150x90 cm (Thực tế)</button>
+          <button class="pill-btn" onclick="applyPreset(1500, 1200, 150, 1200, 1200)">150x120 cm</button>
+          <button class="pill-btn" onclick="applyPreset(1200, 1000, 150, 1200, 1200)">ISO 120x100 cm</button>
+          <button class="pill-btn" onclick="applyPreset(1200, 800, 150, 1200, 1000)">EUR 120x80 cm</button>
+        </div>
+
+        <div class="input-grid">
+          <div class="input-group">
+            <label>Chiều Dài Pallet #1 <span class="unit">(mm)</span></label>
+            <input type="number" id="palLength" value="1200" min="500" step="10">
+          </div>
+          <div class="input-group">
+            <label>Chiều Rộng Pallet #1 <span class="unit">(mm)</span></label>
+            <input type="number" id="palWidth" value="1000" min="500" step="10">
+          </div>
+          <div class="input-group">
+            <label>Chiều Cao Đế <span class="unit">(mm)</span></label>
+            <input type="number" id="palHeight" value="150" min="50" step="5">
+          </div>
+          <div class="input-group">
+            <label>Chiều Cao Tối Đa <span class="unit">(mm)</span></label>
+            <input type="number" id="palMaxHeight" value="1200" min="500" step="50">
+          </div>
+          <div class="input-group">
+            <label>Tải Trọng Tối Đa <span class="unit">(kg)</span></label>
+            <input type="number" id="palMaxWeight" value="1200" min="100" step="50">
+          </div>
+          <div class="input-group">
+            <label>Độ Nhô Biên <span class="unit">(mm)</span></label>
+            <input type="number" id="palOverhang" value="0" min="0" max="100" step="5">
+          </div>
+        </div>
+
+        <!-- Compaction & Solid Tiering Controls -->
+        <div class="compaction-box">
+          <label class="checkbox-row" style="margin-bottom: 6px;">
+            <input type="checkbox" id="chkAllow3DRotate" checked onchange="calculatePallet()">
+            <span>🔄 <b>Cho phép xoay thùng 90° đa hướng</b> (Xoay Dài ↔ Rộng ↔ Cao để ghép khít tối đa)</span>
+          </label>
+          <label class="checkbox-row" style="margin-bottom: 6px;">
+            <input type="checkbox" id="chkPrioritizeHeight" checked onchange="calculatePallet()">
+            <span>🔝 <b>Ưu tiên sắp thêm tầng</b> (Tối đa chiều cao kiện hàng, hạn chế tạo nhiều pallet)</span>
+          </label>
+          <label class="checkbox-row" style="margin-bottom: 6px;">
+            <input type="checkbox" id="chkStrictCoverage" onchange="calculatePallet()">
+            <span>🛡️ Chuyển tầng lẻ dở dang sang Pallet phụ (khi tầng chóp &lt; 50% diện tích tầng dưới)</span>
+          </label>
+          <label class="checkbox-row" style="margin-bottom: 6px;">
+            <input type="checkbox" id="chkLargeBottom" checked>
+            <span>⚖️ Ưu tiên thùng diện tích đáy lớn & nặng ở phía dưới</span>
+          </label>
+          <label class="checkbox-row" style="margin-bottom: 6px;">
+            <input type="checkbox" id="chkZeroGap" checked>
+            <span>🔒 Ép sát khít 0mm (Zero-Gap) & Căn giữa tâm sàn</span>
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" id="chkFlatTop" checked onchange="calculatePallet()">
+            <span>✈️ Đóng khối vuông phẳng (Chuẩn hãng vận chuyển)</span>
+          </label>
+          <div style="font-size: 11px; color: var(--slate-600); margin-left: 24px; margin-top: 2px;">
+            Độ lệch chiều cao tối đa: <input type="number" id="flatTolerance" value="30" min="0" max="200" step="5" style="width: 55px; padding: 2px 4px; border: 1px solid var(--slate-300); border-radius: 4px;" onchange="calculatePallet()"> mm
+          </div>
+        </div>
+
+        <!-- Corrugated Dunnage Blocks Box -->
+        <div class="dunnage-box">
+          <label class="checkbox-row">
+            <input type="checkbox" id="chkAutoDunnage" checked>
+            <span style="color: #92400e;">📦 Tự động chèn khối bìa carton chêm lót bù khoảng trống</span>
+          </label>
+          <p style="font-size: 10px; color: #92400e; margin-top: 4px; line-height: 1.4;">
+            Khi tầng đạt &ge;90% diện tích, khoảng hở thừa (&le;10%) tự động được bù kín bằng khối carton dày bằng chiều cao tầng, tạo bệ đỡ 100% cho tầng trên.
+          </p>
+          <label class="checkbox-row" style="margin-top: 6px; border-top: 1px dashed #d97706; padding-top: 6px; cursor: pointer;">
+            <input type="checkbox" id="chkDunnageVisibility" checked onchange="toggleDunnageVisibility()">
+            <span style="color: #92400e; font-weight: 600;">👁️ Hiển thị tấm chêm carton (Bật/Tắt để nhìn xuyên thùng)</span>
+          </label>
+        </div>
+
+        <!-- Supplementary Pallet Specs Option -->
+        <div class="sub-pallet-box">
+          <div style="font-size: 11px; font-weight: 700; color: var(--slate-900); margin-bottom: 6px;">
+            🔄 Quy Cách Pallet Phụ (#2, #3...) Khi Thừa Hàng:
+          </div>
+          <select id="subPalletType" onchange="onSubPalletTypeChange()" style="width: 100%; margin-bottom: 6px;">
+            <option value="smaller">Chọn Pallet cỡ nhỏ hơn (Half-Pallet 800x600 mm)</option>
+            <option value="eur">Chọn Pallet nhỏ hơn (EUR 1200x800 mm)</option>
+            <option value="mini">Chọn Pallet Mini (600x400 mm)</option>
+            <option value="same">Dùng cùng kích thước với Pallet #1</option>
+            <option value="custom">Kích thước Pallet phụ tùy chỉnh (Custom)</option>
+          </select>
+          <div id="subPalletCustomInputs" style="display: none;" class="input-grid">
+            <div class="input-group">
+              <label>Dài Pallet Phụ <span class="unit">(mm)</span></label>
+              <input type="number" id="subPalLength" value="800" min="400" step="10">
+            </div>
+            <div class="input-group">
+              <label>Rộng Pallet Phụ <span class="unit">(mm)</span></label>
+              <input type="number" id="subPalWidth" value="600" min="400" step="10">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Mixed SKUs Table -->
+      <div class="section-card">
+        <div class="section-title">
+          <span>📦 2. Danh Sách Thùng Hàng (Mixed SKUs)</span>
+          <button class="btn btn-outline btn-sm" onclick="addSkuRow()">+ Thêm thùng</button>
+        </div>
+
+        <div class="sku-table-container">
+          <table class="sku-table" id="skuTable">
+            <thead>
+              <tr>
+                <th style="width: 22%;">Tên/Mã</th>
+                <th style="width: 13%;">Dài (cm)</th>
+                <th style="width: 13%;">Rộng (cm)</th>
+                <th style="width: 13%;">Cao (cm)*</th>
+                <th style="width: 11%;">Kg</th>
+                <th style="width: 11%;">SL</th>
+                <th style="width: 11%;">Màu</th>
+                <th style="width: 6%;"></th>
+              </tr>
+            </thead>
+            <tbody id="skuTbody"></tbody>
+          </table>
+        </div>
+        <p style="font-size: 11px; color: var(--slate-600); font-style: italic;">
+          *Lưu ý: Cho phép xoay thùng 90° đa hướng (Dài ↔ Rộng ↔ Cao) để ưu tiên xếp kín mặt sàn từng tầng trước khi chèn tấm chêm.
+        </p>
+      </div>
+
+      <!-- Section 3: Actions -->
+      <div class="action-buttons">
+        <button class="btn btn-primary btn-block" onclick="runPacking(false)">
+          🚀 Tính Toán Xếp Tầng & Chêm Lót Carton
+        </button>
+        <button class="btn btn-accent btn-block" onclick="runPacking(true)">
+          ✨ Tự Động Tối Ưu Kích Thước 1 Pallet Duy Nhất
+        </button>
+
+        <div id="statusAlert" class="alert-banner"></div>
+      </div>
+
+      <!-- Section 3: Manual Stacking Studio (Tự Chọn Thùng & Sắp Xếp Theo Ý Riêng) -->
+      <div class="section-card" id="manualStudioCard">
+        <div class="section-title">
+          <span>✍️ 3. Tự Chọn Thùng & Sắp Xếp Theo Ý Riêng</span>
+          <span class="badge-rule" style="background: #e0e7ff; color: #4338ca;">Tùy Chỉnh 100%</span>
+        </div>
+
+        <!-- Add Box Manually -->
+        <div class="manual-studio-box">
+          <div style="font-size: 11px; font-weight: 700; color: var(--slate-800); margin-bottom: 6px;">
+            ➕ Thêm Thùng Vào Vị Trí Chỉ Định:
+          </div>
+          <div class="input-grid" style="grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px;">
+            <div class="input-group">
+              <label>Chọn Loại Thùng</label>
+              <select id="manualSkuSelect" onchange="onManualSkuSelectChange()"></select>
+            </div>
+            <div class="input-group">
+              <label>Xếp Vào Tầng</label>
+              <select id="manualLayerSelect"></select>
+            </div>
+          </div>
+
+          <div class="input-grid" style="grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px;">
+            <div class="input-group">
+              <label>Hướng Xoay Thùng</label>
+              <select id="manualOriSelect"></select>
+            </div>
+            <div class="input-group">
+              <label>Căn Tự Động</label>
+              <button class="btn btn-outline btn-block" style="padding: 4px; font-size: 11px;" onclick="manualAutoPlaceNext()">⚡ Khít Góc Gần Nhất</button>
+            </div>
+          </div>
+
+          <div class="input-grid" style="grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px;">
+            <div class="input-group">
+              <label>Tọa Độ X <span class="unit">(cm)</span></label>
+              <input type="number" id="manualPosX" value="0" min="0" step="1">
+            </div>
+            <div class="input-group">
+              <label>Tọa Độ Y <span class="unit">(cm)</span></label>
+              <input type="number" id="manualPosY" value="0" min="0" step="1">
+            </div>
+          </div>
+
+          <button class="btn btn-primary btn-block" onclick="manualAddBoxToPallet()">
+            ➕ Đặt Thùng Này Lên Pallet
+          </button>
+        </div>
+
+        <!-- Selected Box Inspector & Live Manipulator -->
+        <div id="selectedBoxPanel" class="selected-box-card" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <b style="color: #b45309; font-size: 11px;" id="selectedBoxTitle">📦 Thùng Đang Chọn</b>
+            <button onclick="deselectBox()" style="background: none; border: none; font-size: 14px; cursor: pointer; color: #b45309; font-weight: 700;">✕</button>
+          </div>
+          <div id="selectedBoxInfo" style="font-size: 11px; color: #78350f; margin-bottom: 8px; line-height: 1.4;"></div>
+
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 6px;">
+            <button class="btn btn-outline btn-sm" onclick="moveSelectedBox(-5, 0)" title="Sang trái 5cm">⬅️ -5cm</button>
+            <button class="btn btn-outline btn-sm" onclick="moveSelectedBox(5, 0)" title="Sang phải 5cm">➡️ +5cm</button>
+            <button class="btn btn-outline btn-sm" onclick="moveSelectedBox(0, -5)" title="Ra trước 5cm">⬇️ -5cm</button>
+            <button class="btn btn-outline btn-sm" onclick="moveSelectedBox(0, 5)" title="Lùi sau 5cm">⬆️ +5cm</button>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 6px;">
+            <button class="btn btn-outline btn-sm" onclick="rotateSelectedBoxHoriz()">🔄 Xoay Ngang 90°</button>
+            <button class="btn btn-outline btn-sm" onclick="rotateSelectedBox3D()">🔄 Lật Đứng 90°</button>
+          </div>
+
+          <!-- Direct Layer Selector -->
+          <div style="display: flex; gap: 4px; align-items: center; margin-bottom: 6px;">
+            <label style="font-size: 11px; font-weight: 700; color: #78350f; white-space: nowrap;">Chuyển sang:</label>
+            <select id="selectedBoxLayerDirectSelect" style="flex: 1; padding: 4px 6px; font-size: 11px; border: 1px solid #d97706; border-radius: 4px; background: white;"></select>
+            <button class="btn btn-outline btn-sm" onclick="moveSelectedBoxToSpecificLayer()" style="padding: 4px 8px; font-size: 11px; color: #92400e; border-color: #d97706; font-weight: 700; background: #fef3c7;">Chuyển</button>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 6px;">
+            <button class="btn btn-outline btn-sm" onclick="moveSelectedBoxLayer(-1)" title="Chuyển xuống tầng dưới">
+              🔽 Xuống Tầng Dưới (-1)
+            </button>
+            <button class="btn btn-outline btn-sm" onclick="moveSelectedBoxLayer(1)" title="Chuyển lên tầng trên">
+              🔼 Lên Tầng Trên (+1)
+            </button>
+          </div>
+
+          <button class="btn btn-outline btn-sm btn-block" style="color: #dc2626; border-color: #f87171; background: #fef2f2; width: 100%;" onclick="deleteSelectedBox()">
+            🗑️ Xóa Thùng Này Khỏi Pallet
+          </button>
+        </div>
+
+        <!-- Section 3.2: Quản Lý & Hoán Đổi Toàn Bộ Tầng (Đổi Cả Khối Thùng) -->
+        <div class="manual-studio-box" style="background: #f0fdf4; border: 1.5px solid #22c55e; margin-top: 10px; margin-bottom: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <div style="font-size: 11px; font-weight: 700; color: #15803d; text-transform: uppercase;">
+              🔄 Đổi Các Tầng Cho Nhau (Cả Khối Thùng):
+            </div>
+            <span class="badge-rule" style="background: #dcfce7; color: #166534; font-size: 9px;">Đổi Cả Tầng</span>
+          </div>
+          
+          <div style="font-size: 10.5px; color: #166534; line-height: 1.35; margin-bottom: 8px;">
+            Hoán đổi toàn bộ tất cả thùng trong tầng này sang vị trí tầng khác (tự động cập nhật cao độ Z và khớp nối các tầng).
+          </div>
+
+          <!-- Swap Two Specific Layers -->
+          <div style="display: grid; grid-template-columns: 1fr auto 1fr auto; gap: 4px; align-items: center; margin-bottom: 8px;">
+            <select id="swapLayerSelectA" style="padding: 4px 6px; font-size: 11px; border: 1px solid #16a34a; border-radius: 4px; background: white;"></select>
+            <span style="font-weight: 700; color: #15803d;">↔</span>
+            <select id="swapLayerSelectB" style="padding: 4px 6px; font-size: 11px; border: 1px solid #16a34a; border-radius: 4px; background: white;"></select>
+            <button class="btn btn-primary btn-sm" onclick="executeSwapTwoLayers()" style="padding: 4px 8px; font-size: 11px; white-space: nowrap; font-weight: 700;">
+              🔄 Đổi 2 Tầng
+            </button>
+          </div>
+
+          <!-- 1-Click Auto Reorder: Large Boxes to Bottom -->
+          <button class="btn btn-block btn-sm" onclick="autoReorderLayersLargeBottom()" style="background: #15803d; color: white; border: none; font-weight: 700; padding: 6px 10px; font-size: 11.5px; display: flex; align-items: center; justify-content: center; gap: 6px;" title="Tự động tính toán diện tích đáy & trọng lượng để đẩy các tầng có thùng lớn hơn xuống tầng dưới cùng">
+            ⚖️ Ưu Tiên Xếp Tầng Thùng Lớn Ở Dưới Đáy
+          </button>
+        </div>
+
+        <!-- Utility buttons -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+          <button class="btn btn-accent btn-sm" onclick="manualApplyDunnageSquaring()">📦 Chèn Chêm Vuông Các Cạnh</button>
+          <button class="btn btn-outline btn-sm" style="color: #dc2626;" onclick="clearAllBoxesFromPallet()">🧹 Xóa Hết Hàng Để Tự Xếp</button>
+        </div>
+      </div>
+
+      <!-- Section 4: Breakdown & Dunnage Cut List -->
+      <div class="section-card" id="breakdownCard" style="display: none;">
+        <div class="section-title">📊 Danh Mục Bìa Carton Chêm Lót Cần Cắt</div>
+        <div id="dunnageCutListDiv" style="font-size: 11px; color: var(--slate-800); margin-bottom: 8px;"></div>
+        <div class="section-title" style="margin-top: 10px;">📦 Danh Sách Phân Bổ Pallet</div>
+        <div id="palletSummaryList" style="font-size: 12px; color: var(--slate-700);"></div>
+      </div>
+      <!-- Section 5: Ghi Chú & Hướng Dẫn Tùy Chỉnh (Custom Comments & SOP Notes) -->
+      <div class="section-card" id="customCommentCard">
+        <div class="section-title">
+          <span>💬 Ghi Chú &amp; Hướng Dẫn Tùy Chỉnh</span>
+          <span class="badge-rule" style="background: #e0f2fe; color: #0369a1;">Sửa theo ý thích</span>
+        </div>
+        <div style="font-size: 11px; color: var(--slate-600); margin-bottom: 6px; line-height: 1.4;">
+          Nhập các lưu ý, yêu cầu đóng gói riêng hoặc chỉnh sửa theo ý muốn. Nội dung sẽ tự động lưu và in kèm trong tài liệu Packing Sheet!
+        </div>
+        <textarea id="palletCommentText" rows="4" style="width: 100%; padding: 8px 10px; border: 1px solid var(--slate-300); border-radius: 6px; font-size: 12px; font-family: inherit; resize: vertical; margin-bottom: 6px;" placeholder="Ví dụ:&#10;- Quấn màng co PE 5 vòng quanh thân pallet.&#10;- Chèn thêm nẹp góc V giấy ở 4 cạnh đứng.&#10;- Thùng Vàng nặng xếp dưới đáy, kiểm tra kỹ dây đai.&#10;- Dán tem hàng dễ vỡ ở 2 mặt trước và hông..." oninput="onCommentInput()"></textarea>
+        <div style="display: flex; gap: 6px;">
+          <button class="btn btn-primary btn-sm btn-block" onclick="saveCustomComment()">
+            💾 Lưu Ghi Chú Này
+          </button>
+          <button class="btn btn-outline btn-sm" onclick="clearCustomComment()" style="color: var(--slate-600);" title="Xóa ghi chú">
+            🗑️
+          </button>
+        </div>
+        <div id="commentSavedMsg" style="display: none; font-size: 11px; color: #16a34a; font-weight: 600; margin-top: 5px;">
+          ✅ Đã lưu ghi chú thành công!
+        </div>
+      </div>
+
+
+    </div>
+
+    <!-- Right Viewport Area -->
+    <div class="viewport-area">
+
+      <!-- Pallet Tab Switcher -->
+      <div class="pallet-tabs-bar">
+        <div class="pallet-tabs" id="palletTabButtons"></div>
+        <div style="font-size: 11px; font-weight: 600; color: var(--slate-600);" id="palletStatusNote">
+          Đang hiển thị: Pallet #1
+        </div>
+      </div>
+
+      <!-- Top KPI Bar -->
+      <div class="kpi-bar">
+        <div class="kpi-card">
+          <div class="kpi-label">Kích Thước Pallet</div>
+          <div class="kpi-value" id="kpiPalletSize" style="font-size: 12px;">1200 x 1000 <span class="kpi-sub">mm</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Thùng Trong Kiện Này</div>
+          <div class="kpi-value" id="kpiBoxCount">0 <span class="kpi-sub">thùng</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Kích Thước Khối Hàng</div>
+          <div class="kpi-value" id="kpiDimensions" style="font-size: 12px;">0 x 0 x 0 <span class="kpi-sub">mm</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Tổng Khối Lượng Kiện</div>
+          <div class="kpi-value" id="kpiWeight">0 <span class="kpi-sub">kg</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Khối Chêm Lót Carton</div>
+          <div class="kpi-value" id="kpiDunnageCount" style="color: var(--dunnage); font-size: 12px;">0 khối</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Độ Đặc Khít Chịu Lực</div>
+          <div class="kpi-value" id="kpiSolidStatus" style="color: var(--accent); font-size: 12px;">100% Đặc Khít</div>
+        </div>
+      </div>
+
+      <!-- Live Comment Banner -->
+      <div id="kpiCommentBanner" style="display: none; margin: 0 20px 8px 20px; padding: 8px 12px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; font-size: 12px; color: #1e40af;">
+        💬 <b>Ghi chú đóng gói:</b> <span id="kpiCommentDisplay" style="color: #1e3a8a;"></span>
+      </div>
+
+      <!-- 3D Canvas Viewport -->
+      <div class="canvas-wrapper">
+        <canvas id="threeCanvas"></canvas>
+
+        <!-- Layer Slicing Toolbar -->
+        <div class="layer-slicing-bar">
+          <div class="layer-slicing-title">
+            <span>🍰 Cắt Lớp:</span>
+          </div>
+          <div class="layer-buttons" id="layerButtonGroup">
+            <button class="layer-btn active" onclick="selectLayer(-1)">Tất cả</button>
+          </div>
+          <div style="display: flex; gap: 3px; margin-left: 6px;" id="layerMoveQuickButtons">
+            <button class="layer-btn" onclick="moveActiveLayerStep(-1)" title="Đổi toàn bộ tầng đang chọn xuống 1 tầng" style="background: #f1f5f9; border-color: #cbd5e1; font-weight: 700;">🔽 Hạ Tầng</button>
+            <button class="layer-btn" onclick="moveActiveLayerStep(1)" title="Đổi toàn bộ tầng đang chọn lên 1 tầng" style="background: #f1f5f9; border-color: #cbd5e1; font-weight: 700;">🔼 Nâng Tầng</button>
+          </div>
+        </div>
+
+        <!-- View Controls -->
+        <div class="view-controls">
+          <button onclick="setViewAngle('iso')">Phối Cảnh 3D</button>
+          <button onclick="setViewAngle('top')">Mặt Trên (Top)</button>
+          <button onclick="setViewAngle('front')">Mặt Trước</button>
+          <button onclick="setViewAngle('side')">Mặt Bên</button>
+          <button onclick="resetCamera()">Đặt Lại Camera</button>
+          <button id="btnToggleDunnage" class="btn-dunnage-toggle" onclick="toggleDunnageVisibility()" style="margin-top: 4px;">👁️ Ẩn Tấm Chêm</button>
+          <button id="btnToggleDragMode" onclick="toggleDragMode()" style="background: #e0e7ff; color: #3730a3; border: 1.5px solid #6366f1; margin-top: 4px; font-weight: 700;" title="Kéo thả chuột trên 3D để di chuyển thùng">✋ Kéo Thả 3D: BẬT</button>
+        </div>
+
+        <!-- Legend Box -->
+        <div class="legend-box" id="legendBox">
+          <div style="font-weight: 700; margin-bottom: 4px; color: var(--slate-800);">Chú thích SKU:</div>
+          <div id="legendItems"></div>
+        </div>
+
+        <!-- Floating 3D HUD Rotation & Manipulation Toolbar -->
+        <div id="canvas3dWidget" style="display: none; position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(15, 23, 42, 0.92); backdrop-filter: blur(8px); border: 1.5px solid #f59e0b; border-radius: 30px; padding: 6px 14px; display: flex; align-items: center; gap: 6px; z-index: 10; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.4); color: white;">
+          <span id="canvasWidgetBoxName" style="font-size: 11px; font-weight: 700; color: #fbbf24; padding-right: 6px; border-right: 1px solid rgba(255,255,255,0.2); white-space: nowrap;">Thùng #1</span>
+          <button class="hud-btn" onclick="rotateSelectedBoxHoriz()" title="Xoay Ngang 90° (Phím R)">🔄 Xoay Ngang (R)</button>
+          <button class="hud-btn" onclick="rotateSelectedBox3D()" title="Lật Đứng 90° (Phím F)">🔄 Lật Đứng (F)</button>
+          <button class="hud-btn hud-down" onclick="moveSelectedBoxLayer(-1)" title="Hạ Xuống Tầng Dưới">🔽 Xuống Tầng</button>
+          <button class="hud-btn hud-up" onclick="moveSelectedBoxLayer(1)" title="Nâng Lên Tầng Trên">🔼 Lên Tầng</button>
+          <button class="hud-btn hud-del" onclick="deleteSelectedBox()" title="Xóa Thùng Này (Phím Delete)">🗑️ Xóa</button>
+          <button onclick="deselectBox()" style="background: none; border: none; color: #94a3b8; font-size: 14px; cursor: pointer; padding: 0 4px; font-weight: 700;" title="Bỏ chọn (Phím Esc)">✕</button>
+        </div>
+
+        <!-- Tooltip -->
+        <div id="tooltip"></div>
+      </div>
+
+      <!-- Bottom Step Player -->
+      <div class="player-bar">
+        <button class="btn btn-outline btn-sm" id="btnPlay" onclick="togglePlay()">▶ Phát</button>
+        <button class="btn btn-outline btn-sm" onclick="resetStep()">⏮ Đầu</button>
+
+        <div class="slider-container">
+          <span style="font-size: 11px; font-weight: 600; color: var(--slate-600);">Tiến trình đóng gói:</span>
+          <input type="range" id="stepSlider" min="0" max="0" value="0" oninput="onSliderChange(this.value)">
+          <span id="stepCounter" style="font-size: 12px; font-weight: 700; min-width: 50px;">0 / 0</span>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- MODAL: 2D BLUEPRINT POPUP -->
+  <div class="modal-backdrop" id="blueprintModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>🗺️ Sơ Đồ Cắt Lớp 2D Từng Tầng (Hiển Thị Khối Chêm Lót Carton Bù Khoảng Trống)</h2>
+        <button class="modal-close" onclick="closeBlueprintModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="blueprint-canvas-box">
+          <div style="margin-bottom: 8px; font-size: 12px; font-weight: 600; color: var(--slate-700);">
+            Mặt cắt hình chiếu bằng của Pallet đang chọn:
+          </div>
+          <canvas id="blueprintCanvas" width="550" height="500"></canvas>
+          <div style="margin-top: 8px; font-size: 11px; color: var(--slate-600);">
+            Khu vực sọc nâu vàng biểu thị khối bìa carton chêm lót bù khoảng trống để tạo bệ đỡ 100% cho tầng trên.
+          </div>
+        </div>
+        <div class="blueprint-info-pane">
+          <div style="font-size: 12px; font-weight: 700; color: var(--slate-900);">Chọn tầng quan sát:</div>
+          <div class="blueprint-layer-tabs" id="modalLayerTabs"></div>
+          <div class="section-card" style="padding: 10px;">
+            <div style="font-weight: 700; font-size: 12px; margin-bottom: 6px; color: var(--slate-800);" id="modalLayerTitle">
+              Thông số tầng đang chọn
+            </div>
+            <div id="modalLayerStats" style="font-size: 11px; line-height: 1.6; color: var(--slate-700);">
+              Chọn một tầng để xem chi tiết thông số.
+            </div>
+          </div>
+          <button class="btn btn-outline btn-block btn-sm" onclick="triggerPrintReport()">
+            🖨️ In Toàn Bộ Sơ Đồ Các Tầng Ra Giấy
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HIDDEN PRINT TEMPLATE -->
+  <div id="printReportArea"></div>
+
+  <!-- SCRIPT LOGIC -->
+  <script>
+    /* ==========================================================================
+       1. THREE.JS INITIALIZATION & SCENE SETUP
+       ========================================================================== */
+    let scene, camera, renderer, controls;
+    let palletGroup, cargoGroup, dunnageGroup;
+    let boxMeshes = [];
+    let dunnageMeshes = [];
+    let raycaster, mouse;
+    let isPlaying = false;
+    let playInterval = null;
+
+    let palletsResult = [];
+    let activePalletIndex = 0;
+    let activeLayerIndex = -1;
+
+    function init3D() {
+      if (typeof THREE === 'undefined') {
+        console.warn('Three.js chưa tải được, giao diện 3D tạm dừng.');
+        return;
+      }
+      const container = document.querySelector('.canvas-wrapper');
+      const canvas = document.getElementById('threeCanvas');
+      if (!container || !canvas) return;
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xf1f5f9);
+
+      camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 1, 20000);
+      camera.position.set(2200, 2000, 2600);
+
+      renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.08;
+      controls.maxPolarAngle = Math.PI / 2 + 0.1;
+
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+      scene.add(ambientLight);
+
+      const hemiLight = new THREE.HemisphereLight(0xffffff, 0x94a3b8, 0.45);
+      hemiLight.position.set(0, 1000, 0);
+      scene.add(hemiLight);
+
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+      dirLight.position.set(1500, 3000, 2000);
+      dirLight.castShadow = true;
+      dirLight.shadow.mapSize.width = 2048;
+      dirLight.shadow.mapSize.height = 2048;
+      scene.add(dirLight);
+
+      const gridHelper = new THREE.GridHelper(4000, 40, 0x94a3b8, 0xe2e8f0);
+      gridHelper.position.y = -1;
+      scene.add(gridHelper);
+
+      palletGroup = new THREE.Group();
+      cargoGroup = new THREE.Group();
+      dunnageGroup = new THREE.Group();
+      scene.add(palletGroup);
+      scene.add(cargoGroup);
+      scene.add(dunnageGroup);
+
+      raycaster = new THREE.Raycaster();
+      mouse = new THREE.Vector2();
+      renderer.domElement.addEventListener('mousemove', onMouseMove, false);
+      renderer.domElement.addEventListener('click', on3DCanvasClick, false);
+      init3DDragControls();
+
+      window.addEventListener('resize', onWindowResize, false);
+
+      renderPalletModel(1200, 1000, 150);
+      controls.target.set(0, 400, 0);
+      controls.update();
+
+      animate();
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    function onWindowResize() {
+      const container = document.querySelector('.canvas-wrapper');
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(container.clientWidth, container.clientHeight);
+    }
+
+    /* ==========================================================================
+       2. PROCEDURAL 3D WOODEN PALLET GENERATOR
+       ========================================================================== */
+    function renderPalletModel(L, W, H) {
+      if (!palletGroup || !palletGroup.children) return;
+      while(palletGroup.children.length > 0){
+        palletGroup.remove(palletGroup.children[0]);
+      }
+
+      const woodMaterial = new THREE.MeshStandardMaterial({
+        color: 0xc89d6c,
+        roughness: 0.85,
+        metalness: 0.05
+      });
+      const woodDarkMaterial = new THREE.MeshStandardMaterial({
+        color: 0x9b6b38,
+        roughness: 0.9,
+        metalness: 0.05
+      });
+
+      const halfL = L / 2;
+      const halfW = W / 2;
+
+      // 1. Top deck boards
+      const numTopBoards = 7;
+      const boardThick = 22;
+      const boardWidth = (L - (numTopBoards - 1) * 20) / numTopBoards;
+      const topY = H - boardThick / 2;
+
+      for (let i = 0; i < numTopBoards; i++) {
+        const boardGeom = new THREE.BoxGeometry(boardWidth, boardThick, W);
+        const board = new THREE.Mesh(boardGeom, woodMaterial);
+        const posX = -halfL + boardWidth/2 + i * (boardWidth + 20);
+        board.position.set(posX, topY, 0);
+        board.castShadow = true;
+        board.receiveShadow = true;
+        palletGroup.add(board);
+      }
+
+      // 2. Stringers
+      const stringerH = 30;
+      const stringerY = H - boardThick - stringerH / 2;
+      const numStringers = 3;
+      for (let i = 0; i < numStringers; i++) {
+        const sGeom = new THREE.BoxGeometry(L, stringerH, 95);
+        const stringer = new THREE.Mesh(sGeom, woodDarkMaterial);
+        const posZ = -halfW + 95/2 + i * (W - 95)/(numStringers - 1);
+        stringer.position.set(0, stringerY, posZ);
+        palletGroup.add(stringer);
+      }
+
+      // 3. Wooden blocks
+      const blockH = H - boardThick * 2 - stringerH;
+      const blockY = boardThick + blockH / 2;
+      const blockL = 120, blockW = 100;
+      const xPositions = [-halfL + blockL/2, 0, halfL - blockL/2];
+      const zPositions = [-halfW + blockW/2, 0, halfW - blockW/2];
+
+      xPositions.forEach(x => {
+        zPositions.forEach(z => {
+          const bGeom = new THREE.BoxGeometry(blockL, blockH, blockW);
+          const block = new THREE.Mesh(bGeom, woodDarkMaterial);
+          block.position.set(x, blockY, z);
+          palletGroup.add(block);
+        });
+      });
+
+      // 4. Bottom boards
+      const botY = boardThick / 2;
+      zPositions.forEach(z => {
+        const bBoardGeom = new THREE.BoxGeometry(L, boardThick, blockW);
+        const bBoard = new THREE.Mesh(bBoardGeom, woodMaterial);
+        bBoard.position.set(0, botY, z);
+        palletGroup.add(bBoard);
+      });
+    }
+
+    /* ==========================================================================
+       3. SKU TABLE & PRESETS
+       ========================================================================== */
+    const DEFAULT_COLORS = [
+      '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'
+    ];
+    let skuCounter = 0;
+
+    function addSkuRow(data = null) {
+      skuCounter++;
+      const tbody = document.getElementById('skuTbody');
+      const tr = document.createElement('tr');
+      tr.id = `sku-row-${skuCounter}`;
+
+      const name = data ? data.name : `Thùng ${String.fromCharCode(64 + skuCounter)}`;
+      const l = data ? (data.l_cm || data.l) : 40;
+      const w = data ? (data.w_cm || data.w) : 30;
+      const h = data ? (data.h_cm || data.h) : 25;
+      const wt = data ? data.wt : 12;
+      const qty = data ? data.qty : 16;
+      const col = data ? data.color : DEFAULT_COLORS[(skuCounter - 1) % DEFAULT_COLORS.length];
+
+      tr.innerHTML = `
+        <td><input type="text" class="sku-name" value="${name}"></td>
+        <td><input type="number" class="sku-l" value="${l}" min="5" step="0.5"></td>
+        <td><input type="number" class="sku-w" value="${w}" min="5" step="0.5"></td>
+        <td><input type="number" class="sku-h" value="${h}" min="5" step="0.5"></td>
+        <td><input type="number" class="sku-wt" value="${wt}" min="0.1" step="0.5"></td>
+        <td><input type="number" class="sku-qty" value="${qty}" min="1" step="1"></td>
+        <td><input type="color" class="sku-color" value="${col}"></td>
+        <td><button class="btn-icon" onclick="removeSkuRow(${skuCounter})">✕</button></td>
+      `;
+      tbody.appendChild(tr);
+    }
+
+    function removeSkuRow(id) {
+      const row = document.getElementById(`sku-row-${id}`);
+      if (row) row.remove();
+    }
+
+    function applyPreset(L, W, H, maxH, maxWt) {
+      document.getElementById('palLength').value = L;
+      document.getElementById('palWidth').value = W;
+      document.getElementById('palHeight').value = H;
+      document.getElementById('palMaxHeight').value = maxH;
+      document.getElementById('palMaxWeight').value = maxWt;
+      renderPalletModel(L, W, H);
+    }
+
+    function onSubPalletTypeChange() {
+      const val = document.getElementById('subPalletType').value;
+      const customInputs = document.getElementById('subPalletCustomInputs');
+      if (val === 'custom') {
+        customInputs.style.display = 'grid';
+      } else {
+        customInputs.style.display = 'none';
+      }
+    }
+
+    function getSubPalletDimensions(mainL, mainW) {
+      const val = document.getElementById('subPalletType').value;
+      if (val === 'smaller') {
+        return { L: 800, W: 600, name: 'Half-Pallet (800x600)' };
+      } else if (val === 'eur') {
+        return { L: 1200, W: 800, name: 'EUR (1200x800)' };
+      } else if (val === 'mini') {
+        return { L: 600, W: 400, name: 'Mini (600x400)' };
+      } else if (val === 'same') {
+        return { L: mainL, W: mainW, name: `Cùng kích thước (${mainL}x${mainW})` };
+      } else if (val === 'custom') {
+        const cL = parseFloat(document.getElementById('subPalLength').value) || 800;
+        const cW = parseFloat(document.getElementById('subPalWidth').value) || 600;
+        return { L: cL, W: cW, name: `Tùy chỉnh (${cL}x${cW})` };
+      }
+      return { L: 800, W: 600, name: 'Half-Pallet (800x600)' };
+    }
+
+    function loadSampleData() {
+      const tbody = document.getElementById('skuTbody');
+      tbody.innerHTML = '';
+      skuCounter = 0;
+
+      // Pallet thực tế 150 x 90 cm, cao tối đa 120 cm
+      applyPreset(1500, 900, 150, 1200, 1200);
+
+      // Đặt chế độ ưu tiên Kiểu 1 (Đóng khối vuông phẳng)
+      const opt1 = document.getElementById('optStyle1');
+      if (opt1) opt1.checked = true;
+
+      // 34 Thùng hàng thực tế (đơn vị cm):
+      // Thùng Tím: 70 x 45 x 16 cm (18 thùng ở đáy)
+      addSkuRow({ name: 'Thùng Tím', l: 70, w: 45, h: 16, wt: 12, qty: 18, color: '#a855f7' });
+      // Thùng Vàng: 140 x 15 x 20 cm (6 thùng)
+      addSkuRow({ name: 'Thùng Vàng', l: 140, w: 15, h: 20, wt: 10, qty: 6, color: '#eab308' });
+      // Thùng Cam: 70 x 30 x 20 cm (6 thùng)
+      addSkuRow({ name: 'Thùng Cam', l: 70, w: 30, h: 20, wt: 8, qty: 6, color: '#f97316' });
+      // Thùng Xanh Nhỏ: 35 x 30 x 16 cm (4 thùng)
+      addSkuRow({ name: 'Thùng Xanh Nhỏ', l: 35, w: 30, h: 16, wt: 5, qty: 4, color: '#06b6d4' });
+
+      runPacking(false);
+    }
+
+    function getSkuListFromUI() {
+      const rows = document.querySelectorAll('#skuTbody tr');
+      const skus = [];
+      rows.forEach(r => {
+        const l_cm = parseFloat(r.querySelector('.sku-l').value) || 10;
+        const w_cm = parseFloat(r.querySelector('.sku-w').value) || 10;
+        const h_cm = parseFloat(r.querySelector('.sku-h').value) || 10;
+        skus.push({
+          name: r.querySelector('.sku-name').value.trim() || 'SKU',
+          l: Math.round(l_cm * 10), // convert cm to mm internally
+          w: Math.round(w_cm * 10),
+          h: Math.round(h_cm * 10),
+          l_cm: l_cm,
+          w_cm: w_cm,
+          h_cm: h_cm,
+          wt: parseFloat(r.querySelector('.sku-wt').value) || 1,
+          qty: parseInt(r.querySelector('.sku-qty').value) || 1,
+          color: r.querySelector('.sku-color').value || '#3b82f6'
+        });
+      });
+      return skus;
+    }
+
+    /* ==========================================================================
+       4. 90% THRESHOLD, CORRUGATED DUNNAGE BLOCKS & PACKING ALGORITHM
+       ========================================================================== */
+    function checkCollision2D(b1, b2) {
+      return (
+        b1.x < b2.x + b2.l && b1.x + b1.l > b2.x &&
+        b1.y < b2.y + b2.w && b1.y + b1.w > b2.y
+      );
+    }
+
+    function compactBox2D(x, y, l, w, placedInLayer) {
+      let curX = x;
+      let curY = y;
+
+      let maxX = 0;
+      for (const b of placedInLayer) {
+        if (curY < b.y + b.w && curY + w > b.y && b.x + b.l <= curX + 0.1) {
+          if (b.x + b.l > maxX) maxX = b.x + b.l;
+        }
+      }
+      curX = maxX;
+
+      let maxY = 0;
+      for (const b of placedInLayer) {
+        if (curX < b.x + b.l && curX + l > b.x && b.y + b.w <= curY + 0.1) {
+          if (b.y + b.w > maxY) maxY = b.y + b.w;
+        }
+      }
+      curY = maxY;
+
+      return { x: curX, y: curY };
+    }
+
+    /**
+     * Finds maximal unoccupied rectangular spaces on a pallet layer and creates Dunnage blocks
+     */
+    function generateDunnageBlocks(palL, palW, placedInLayer, layerZ, layerH, layerIdx) {
+      const gridStep = 50; // 50mm resolution
+      const cols = Math.floor(palL / gridStep);
+      const rows = Math.floor(palW / gridStep);
+
+      // Grid: 0 = empty, 1 = occupied by box
+      const grid = Array.from({ length: cols }, () => Array(rows).fill(0));
+
+      placedInLayer.forEach(b => {
+        const c1 = Math.max(0, Math.floor(b.x / gridStep));
+        const c2 = Math.min(cols, Math.ceil((b.x + b.l) / gridStep));
+        const r1 = Math.max(0, Math.floor(b.y / gridStep));
+        const r2 = Math.min(rows, Math.ceil((b.y + b.w) / gridStep));
+        for (let c = c1; c < c2; c++) {
+          for (let r = r1; r < r2; r++) {
+            grid[c][r] = 1;
+          }
+        }
+      });
+
+      let dunnageBlocks = [];
+      let dunnageCounter = 1;
+
+      // Greedy rectangular extraction of empty regions
+      for (let c = 0; c < cols; c++) {
+        for (let r = 0; r < rows; r++) {
+          if (grid[c][r] === 0) {
+            // Find max width along c
+            let maxC = c;
+            while (maxC < cols && grid[maxC][r] === 0) {
+              maxC++;
+            }
+            // Find max height along r that is all empty for [c..maxC-1]
+            let maxR = r;
+            let canExpandR = true;
+            while (canExpandR && maxR < rows) {
+              for (let tc = c; tc < maxC; tc++) {
+                if (grid[tc][maxR] === 1) {
+                  canExpandR = false;
+                  break;
+                }
+              }
+              if (canExpandR) maxR++;
+            }
+
+            // Mark grid as occupied
+            for (let tc = c; tc < maxC; tc++) {
+              for (let tr = r; tr < maxR; tr++) {
+                grid[tc][tr] = 1;
+              }
+            }
+
+            const dunL = (maxC - c) * gridStep;
+            const dunW = (maxR - r) * gridStep;
+            const dunX = c * gridStep;
+            const dunY = r * gridStep;
+
+            if (dunL >= 80 && dunW >= 80) { // Only create meaningful dunnage blocks
+              dunnageBlocks.push({
+                id: `D_${layerIdx}_${dunnageCounter++}`,
+                name: `Chêm Carton Tầng ${layerIdx}`,
+                x: dunX,
+                y: dunY,
+                z: layerZ,
+                l: dunL,
+                w: dunW,
+                h: layerH,
+                wt: Math.max(1, Math.round((dunL * dunW * layerH * 0.00000015))), // Cardboard weight ~ 150 kg/m3
+                color: '#b45309', // Kraft corrugated brown
+                isDunnage: true,
+                layerIndex: layerIdx
+              });
+            }
+          }
+        }
+      }
+
+      return dunnageBlocks;
+    }
+
+    /**
+     * Packs one pallet enforcing:
+     * 1. 90% Minimum Coverage Threshold before creating next layer.
+     * 2. Corrugated Dunnage Blocks to fill <=10% voids if enabled.
+     * 3. 100% Solid Support beneath upper layers.
+     * 4. Leftover boxes (<90% coverage) are transferred to supplementary pallet.
+     */
+    /* ==========================================================================
+       PHYSICAL GRAVITY & BOTTOM SUPPORT VERIFICATION
+       ========================================================================== */
+    function getBoxOrientations(l, w, h, allow3D) {
+      if (!allow3D) {
+        return [
+          { l: l, w: w, h: h },
+          { l: w, w: l, h: h }
+        ];
+      }
+      const raw = [
+        [l, w, h], [w, l, h],
+        [l, h, w], [h, l, w],
+        [w, h, l], [h, w, l]
+      ];
+      const seen = new Set();
+      const res = [];
+      for (const [ol, ow, oh] of raw) {
+        const key = `${ol}_${ow}_${oh}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          res.push({ l: ol, w: ow, h: oh });
+        }
+      }
+      return res;
+    }
+
+    function getBottomSupportRatio(boxX, boxY, boxL, boxW, lowerItems) {
+      if (!lowerItems || lowerItems.length === 0) return 0;
+      let hits = 0;
+      const steps = 4;
+      for (let sx = 0; sx < steps; sx++) {
+        const px = boxX + (sx + 0.5) * (boxL / steps);
+        for (let sy = 0; sy < steps; sy++) {
+          const py = boxY + (sy + 0.5) * (boxW / steps);
+          let supported = false;
+          for (let k = 0; k < lowerItems.length; k++) {
+            const b = lowerItems[k];
+            if (px >= b.x - 2 && px <= b.x + b.l + 2 && py >= b.y - 2 && py <= b.y + b.w + 2) {
+              supported = true;
+              break;
+            }
+          }
+          if (supported) hits++;
+        }
+      }
+      return hits / (steps * steps);
+    }
+
+    function sortItemsForStability(items, palL, palW) {
+      const groups = {};
+      items.forEach(it => {
+        const key = `${it.name}_${it.l}_${it.w}_${it.h}_${it.wt}`;
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(it);
+      });
+
+      const records = [];
+      Object.values(groups).forEach(grp => {
+        const sample = grp[0];
+        const fit1 = Math.floor(palL / sample.l) * Math.floor(palW / sample.w);
+        const fit2 = Math.floor(palL / sample.w) * Math.floor(palW / sample.l);
+        const maxFit = Math.max(1, Math.max(fit1, fit2));
+        const grpLen = grp.length;
+        const footprint = sample.l * sample.w;
+        const fullLayers = Math.floor(grpLen / maxFit);
+        const coverage = (Math.min(grpLen, maxFit) * footprint) / (palL * palW);
+
+        records.push({
+          items: grp,
+          maxFit,
+          fullLayers,
+          footprint,
+          totalArea: grpLen * footprint,
+          wt: sample.wt,
+          coverage
+        });
+      });
+
+      // Hierarchy:
+      // 1. Full layer capability (fullLayers > 0)
+      // 2. Heavy bottom: larger weight and footprint
+      // 3. Leftovers & small odd quantities at the very end (crown layer)
+      records.sort((a, b) => {
+        const aIsCrown = (a.fullLayers === 0 && a.coverage < 0.65) ? 1 : 0;
+        const bIsCrown = (b.fullLayers === 0 && b.coverage < 0.65) ? 1 : 0;
+        if (aIsCrown !== bIsCrown) return aIsCrown - bIsCrown; // Crown items go to end!
+
+        if (a.fullLayers > 0 && b.fullLayers > 0) {
+          if (Math.abs(b.wt - a.wt) > 0.5) return b.wt - a.wt; // Heavier full layers at the bottom!
+          if (Math.abs(b.footprint - a.footprint) > 100) return b.footprint - a.footprint;
+          return b.fullLayers - a.fullLayers;
+        }
+
+        if (b.fullLayers !== a.fullLayers) return b.fullLayers - a.fullLayers;
+        if (Math.abs(b.totalArea - a.totalArea) > 100) return b.totalArea - a.totalArea;
+        if (Math.abs(b.wt - a.wt) > 0.5) return b.wt - a.wt;
+        return b.footprint - a.footprint;
+      });
+
+      const res = [];
+      records.forEach(r => res.push(...r.items));
+      return res;
+    }
+
+    /* ==========================================================================
+       4. MAX-SURFACE COVERAGE & CUBOID SQUARING PACKING ALGORITHM
+       ========================================================================== */
+    function packPalletWithDunnage(pallet, itemsList, enforceFlatTop, flatTol, doZeroGap, doCenter, autoDunnage, prioritizeLargeBottom) {
+      const maxCargoH = pallet.maxH - pallet.H;
+      const maxCargoL = pallet.L + pallet.overhang * 2;
+      const maxCargoW = pallet.W + pallet.overhang * 2;
+      const palletArea = pallet.L * pallet.W;
+
+      // Prioritize full layers first, then heavier/larger footprint, and small odd items for top/gap-filling
+      let remainingPool = prioritizeLargeBottom 
+        ? sortItemsForStability(itemsList, pallet.L, pallet.W) 
+        : [...itemsList];
+
+      let placedAll = [];
+      let dunnageAll = [];
+      let layers = [];
+      let totalWeight = 0;
+      let currentZ = 0;
+      let layerIdx = 1;
+      let boundL = 0;
+      let boundW = 0;
+
+      while (remainingPool.length > 0 && currentZ < maxCargoH) {
+        let placedInLayer = [];
+        let layerDunnage = [];
+        let layerMaxH = 0;
+        let layerTotalWt = 0;
+
+        // Target boundaries for this layer:
+        // Layer 1 can expand up to maxCargoL x maxCargoW.
+        // Once Layer 1 is placed, boundL and boundW are FIXED for all subsequent layers
+        // to form a perfect flush rectangular cuboid ("khối vuông")!
+        const curBoundL = (boundL > 0) ? boundL : maxCargoL;
+        const curBoundW = (boundW > 0) ? boundW : maxCargoW;
+
+        let anchorPoints2D = [{ x: 0, y: 0 }];
+        if (layerIdx > 1 && layers.length > 0) {
+          const prevLayer = layers[layers.length - 1];
+          prevLayer.boxes.forEach(b => {
+            anchorPoints2D.push({ x: b.x, y: b.y });
+            anchorPoints2D.push({ x: b.x + b.l, y: b.y });
+            anchorPoints2D.push({ x: b.x, y: b.y + b.w });
+          });
+        }
+
+        let progress = true;
+        while (progress && remainingPool.length > 0) {
+          progress = false;
+
+          let bestCandidate = null;
+          let bestScore = Infinity;
+          let bestPoolIndex = -1;
+
+          // Sort anchor points: bottom-left (y first, then x)
+          anchorPoints2D.sort((a, b) => {
+            if (Math.abs(a.y - b.y) > 1) return a.y - b.y;
+            return a.x - b.x;
+          });
+
+          // Explore all available items in remainingPool to MAXIMIZE floor coverage!
+          // (Identical boxes do not have to be grouped together; mixed SKUs can tile the surface)
+          for (let i = 0; i < remainingPool.length; i++) {
+            const item = remainingPool[i];
+            if (totalWeight + layerTotalWt + item.wt > pallet.maxWeight) continue;
+
+            const allow3D = document.getElementById('chkAllow3DRotate') ? document.getElementById('chkAllow3DRotate').checked : true;
+            let orientations = getBoxOrientations(item.l, item.w, item.h, allow3D);
+            if (layerMaxH > 0) {
+              // Prioritize orientations that match layer height exactly, or shorter for leveling
+              orientations.sort((a, b) => {
+                const diffA = Math.abs(a.h - layerMaxH);
+                const diffB = Math.abs(b.h - layerMaxH);
+                return diffA - diffB;
+              });
+            }
+
+            for (const pt of anchorPoints2D) {
+              for (const ori of orientations) {
+                let posX = pt.x;
+                let posY = pt.y;
+
+                if (doZeroGap) {
+                  const comp = compactBox2D(posX, posY, ori.l, ori.w, placedInLayer);
+                  posX = comp.x;
+                  posY = comp.y;
+                }
+
+                if (posX + ori.l > curBoundL) continue;
+                if (posY + ori.w > curBoundW) continue;
+                if (currentZ + ori.h > maxCargoH) continue;
+
+                // Height check: allow if same height or shorter (which can be leveled with dunnage pad)
+                if (layerMaxH > 0 && enforceFlatTop) {
+                  if (ori.h > layerMaxH && Math.abs(ori.h - layerMaxH) > flatTol) {
+                    continue; // Taller than layer max by more than tolerance
+                  }
+                }
+
+                // Check 2D collision with other boxes in this layer
+                const testBox2D = { x: posX, y: posY, l: ori.l, w: ori.w };
+                let collide = false;
+                for (const p of placedInLayer) {
+                  if (checkCollision2D(testBox2D, p)) {
+                    collide = true;
+                    break;
+                  }
+                }
+                if (collide) continue;
+
+                // Check Physical Support from layer below (if layer > 1)
+                // Note: The lower layer has boxes + dunnage squaring blocks, so it covers [0, boundL] x [0, boundW]
+                if (layerIdx > 1 && layers.length > 0) {
+                  const prevLayer = layers[layers.length - 1];
+                  const lowerSupports = [...prevLayer.boxes, ...(prevLayer.dunnage || [])];
+                  const supRatio = getBottomSupportRatio(posX, posY, ori.l, ori.w, lowerSupports);
+                  if (supRatio < 0.60) {
+                    continue; // Cannot place: lack of physical support underneath
+                  }
+                }
+
+                // Adjacency touch bonus
+                let touchBonus = 0;
+                for (const p of placedInLayer) {
+                  if (Math.abs(posX - (p.x + p.l)) <= 0.1 || Math.abs((posX + ori.l) - p.x) <= 0.1) touchBonus += 80;
+                  if (Math.abs(posY - (p.y + p.w)) <= 0.1 || Math.abs((posY + ori.w) - p.y) <= 0.1) touchBonus += 80;
+                }
+                if (posX === 0 || Math.abs(posX + ori.l - curBoundL) <= 1) touchBonus += 50;
+                if (posY === 0 || Math.abs(posY + ori.w - curBoundW) <= 1) touchBonus += 50;
+
+                // Max-Area Packing Score:
+                // Primary: Position towards (0, 0)
+                // Bonus for larger area (fills big spaces first, but smaller items will fill remaining gaps!)
+                const areaBonus = ori.l * ori.w;
+                const score = (posY * 1000 + posX) + (i * 200) - (areaBonus * 0.01) - touchBonus;
+
+                if (score < bestScore) {
+                  bestScore = score;
+                  bestCandidate = {
+                    item: item,
+                    x: posX,
+                    y: posY,
+                    z: currentZ,
+                    l: ori.l,
+                    w: ori.w,
+                    h: ori.h
+                  };
+                  bestPoolIndex = i;
+                }
+              }
+            }
+          }
+
+          if (bestCandidate) {
+            placedInLayer.push({
+              id: bestCandidate.item.id,
+              name: bestCandidate.item.name,
+              x: bestCandidate.x,
+              y: bestCandidate.y,
+              z: bestCandidate.z,
+              l: bestCandidate.l,
+              w: bestCandidate.w,
+              h: bestCandidate.h,
+              l_cm: bestCandidate.l / 10,
+              w_cm: bestCandidate.w / 10,
+              h_cm: bestCandidate.h / 10,
+              wt: bestCandidate.item.wt,
+              color: bestCandidate.item.color,
+              layerIndex: layerIdx
+            });
+
+            if (bestCandidate.h > layerMaxH) layerMaxH = bestCandidate.h;
+            layerTotalWt += bestCandidate.item.wt;
+
+            remainingPool.splice(bestPoolIndex, 1);
+
+            anchorPoints2D.push(
+              { x: bestCandidate.x + bestCandidate.l, y: bestCandidate.y },
+              { x: bestCandidate.x, y: bestCandidate.y + bestCandidate.w }
+            );
+
+            anchorPoints2D = anchorPoints2D.filter(p => {
+              return !placedInLayer.some(b => p.x >= b.x && p.x < b.x + b.l && p.y >= b.y && p.y < b.y + b.w);
+            });
+
+            progress = true;
+          }
+        }
+
+        // Establish cargo bounding box on Layer 1
+        if (layerIdx === 1 && placedInLayer.length > 0) {
+          boundL = Math.max(...placedInLayer.map(p => p.x + p.l));
+          boundW = Math.max(...placedInLayer.map(p => p.y + p.w));
+        }
+
+        // ACTIVE GAP-FILLING: Ưu tiên sử dụng các thùng nhỏ còn lại để lấp kín khoảng trống trước khi chèn tấm chêm!
+        let gapFillProgress = true;
+        while (gapFillProgress && remainingPool.length > 0) {
+          gapFillProgress = false;
+          const testPoints = [{ x: 0, y: 0 }];
+          placedInLayer.forEach(b => {
+            testPoints.push({ x: b.x + b.l, y: b.y });
+            testPoints.push({ x: b.x, y: b.y + b.w });
+            testPoints.push({ x: b.x + b.l, y: b.y + b.w });
+            testPoints.push({ x: 0, y: b.y + b.w });
+            testPoints.push({ x: b.x + b.l, y: 0 });
+          });
+
+          // Sort remaining pool by area ASCENDING (ưu tiên các thùng nhỏ nhất trước)
+          const sortedIndices = remainingPool
+            .map((item, idx) => ({ idx, area: item.l * item.w, item }))
+            .sort((a, b) => a.area - b.area);
+
+          for (const entry of sortedIndices) {
+            const item = entry.item;
+            if (totalWeight + layerTotalWt + item.wt > pallet.maxWeight) continue;
+
+            const allow3D = document.getElementById('chkAllow3DRotate') ? document.getElementById('chkAllow3DRotate').checked : true;
+            let orientations = getBoxOrientations(item.l, item.w, item.h, allow3D);
+            if (layerMaxH > 0) {
+              // Prioritize orientations that match layer height exactly, or shorter for leveling
+              orientations.sort((a, b) => {
+                const diffA = Math.abs(a.h - layerMaxH);
+                const diffB = Math.abs(b.h - layerMaxH);
+                return diffA - diffB;
+              });
+            }
+
+            let placedThis = false;
+            for (const pt of testPoints) {
+              if (placedThis) break;
+              for (const ori of orientations) {
+                let posX = pt.x;
+                let posY = pt.y;
+
+                if (doZeroGap) {
+                  const comp = compactBox2D(posX, posY, ori.l, ori.w, placedInLayer);
+                  posX = comp.x;
+                  posY = comp.y;
+                }
+
+                if (posX + ori.l > curBoundL) continue;
+                if (posY + ori.w > curBoundW) continue;
+                if (currentZ + ori.h > maxCargoH) continue;
+
+                const testBox2D = { x: posX, y: posY, l: ori.l, w: ori.w };
+                let collide = false;
+                for (const p of placedInLayer) {
+                  if (checkCollision2D(testBox2D, p)) {
+                    collide = true;
+                    break;
+                  }
+                }
+                if (collide) continue;
+
+                if (layerIdx > 1 && layers.length > 0) {
+                  const prevLayer = layers[layers.length - 1];
+                  const lowerSupports = [...prevLayer.boxes, ...(prevLayer.dunnage || [])];
+                  const supRatio = getBottomSupportRatio(posX, posY, ori.l, ori.w, lowerSupports);
+                  if (supRatio < 0.60) continue;
+                }
+
+                if (layerMaxH > 0 && enforceFlatTop) {
+                  if (ori.h > layerMaxH && Math.abs(ori.h - layerMaxH) > flatTol) {
+                    continue;
+                  }
+                }
+
+                placedInLayer.push({
+                  id: item.id,
+                  name: item.name,
+                  x: posX,
+                  y: posY,
+                  z: currentZ,
+                  l: ori.l,
+                  w: ori.w,
+                  h: ori.h,
+                  l_cm: ori.l / 10,
+                  w_cm: ori.w / 10,
+                  h_cm: ori.h / 10,
+                  wt: item.wt,
+                  color: item.color,
+                  layerIndex: layerIdx
+                });
+
+                if (ori.h > layerMaxH) layerMaxH = ori.h;
+                layerTotalWt += item.wt;
+
+                remainingPool.splice(entry.idx, 1);
+                gapFillProgress = true;
+                placedThis = true;
+                break;
+              }
+            }
+            if (placedThis) break;
+          }
+        }
+
+        if (placedInLayer.length === 0) {
+          break;
+        }
+
+        // 1. Leveling Dunnage Pads: If any box in this layer is shorter than layerMaxH, level its top surface!
+        placedInLayer.forEach((b, bIdx) => {
+          if (b.h < layerMaxH) {
+            const diffH = layerMaxH - b.h;
+            layerDunnage.push({
+              id: `D_LVL_${layerIdx}_${bIdx+1}`,
+              name: `Đệm phẳng T${layerIdx}`,
+              x: b.x,
+              y: b.y,
+              z: currentZ + b.h,
+              l: b.l,
+              w: b.w,
+              h: diffH,
+              l_cm: b.l / 10,
+              w_cm: b.w / 10,
+              h_cm: diffH / 10,
+              layerIndex: layerIdx,
+              isDunnage: true
+            });
+          }
+        });
+
+        // 2. Cuboid Squaring Dunnage Blocks:
+        // Ở Kiểu 1 (Ưu tiên): Tự động chèn khối chêm carton ở mọi tầng để 4 cạnh và mặt trên phẳng vuông vức tuyệt đối!
+        // Ở Kiểu 2: Không chèn chêm ở tầng chóp (để bậc thang tự nhiên).
+        const isStyle1 = document.getElementById('optStyle1') ? document.getElementById('optStyle1').checked : true;
+        const isLastLayer = (remainingPool.length === 0);
+
+        if (autoDunnage && boundL > 0 && boundW > 0) {
+          if (isStyle1 || !isLastLayer) {
+            const sqDunnage = generateCuboidSquaringBlocks(boundL, boundW, placedInLayer, currentZ, layerMaxH, layerIdx);
+            layerDunnage.push(...sqDunnage);
+          }
+        }
+
+        dunnageAll.push(...layerDunnage);
+
+        const layerProductArea = placedInLayer.reduce((sum, b) => sum + (b.l * b.w), 0);
+        const layerFootprintArea = boundL * boundW;
+        const coverageRatio = layerFootprintArea > 0 ? (layerProductArea / layerFootprintArea) : 1;
+
+        layers.push({
+          index: layerIdx,
+          name: `Tầng ${layerIdx}`,
+          zMin: currentZ,
+          zMax: currentZ + layerMaxH,
+          height: layerMaxH,
+          weight: Math.round(layerTotalWt),
+          boxes: placedInLayer,
+          dunnage: layerDunnage,
+          count: placedInLayer.length,
+          coverage: Math.min(100, Math.round(coverageRatio * 100))
+        });
+
+        placedAll.push(...placedInLayer);
+        totalWeight += layerTotalWt;
+        currentZ += layerMaxH;
+        layerIdx++;
+      }
+
+      // Perfect Centering on the Pallet Base (Căn giữa tâm Pallet đối xứng 100%)
+      if (doCenter && (placedAll.length > 0 || dunnageAll.length > 0)) {
+        let minX = Infinity, minY = Infinity;
+        let maxX = -Infinity, maxY = -Infinity;
+
+        placedAll.forEach(p => {
+          if (p.x < minX) minX = p.x;
+          if (p.y < minY) minY = p.y;
+          if (p.x + p.l > maxX) maxX = p.x + p.l;
+          if (p.y + p.w > maxY) maxY = p.y + p.w;
+        });
+        dunnageAll.forEach(d => {
+          if (d.x < minX) minX = d.x;
+          if (d.y < minY) minY = d.y;
+          if (d.x + d.l > maxX) maxX = d.x + d.l;
+          if (d.y + d.w > maxY) maxY = d.y + d.w;
+        });
+
+        if (minX < Infinity && maxX > -Infinity) {
+          const cargoSpanL = maxX - minX;
+          const cargoSpanW = maxY - minY;
+          const targetMinX = Math.round((pallet.L - cargoSpanL) / 2);
+          const targetMinY = Math.round((pallet.W - cargoSpanW) / 2);
+          const shiftX = targetMinX - minX;
+          const shiftY = targetMinY - minY;
+
+          // Shift every unique item EXACTLY ONCE
+          const allUniqueItems = new Set([...placedAll, ...dunnageAll]);
+          allUniqueItems.forEach(item => {
+            item.x += shiftX;
+            item.y += shiftY;
+          });
+        }
+      }
+
+      return {
+        placed: placedAll,
+        dunnage: dunnageAll,
+        unpacked: remainingPool,
+        totalWeight,
+        layers,
+        cargoL: boundL,
+        cargoW: boundW,
+        cargoH: currentZ
+      };
+    }
+
+    function generateCuboidSquaringBlocks(boundL, boundW, placedInLayer, layerZ, layerH, layerIdx) {
+      const gridStep = 20; // 20mm (2cm) resolution
+      const cols = Math.round(boundL / gridStep);
+      const rows = Math.round(boundW / gridStep);
+
+      const grid = Array.from({ length: cols }, () => Array(rows).fill(0));
+
+      placedInLayer.forEach(b => {
+        const c1 = Math.max(0, Math.round(b.x / gridStep));
+        const c2 = Math.min(cols, Math.round((b.x + b.l) / gridStep));
+        const r1 = Math.max(0, Math.round(b.y / gridStep));
+        const r2 = Math.min(rows, Math.round((b.y + b.w) / gridStep));
+        for (let c = c1; c < c2; c++) {
+          for (let r = r1; r < r2; r++) {
+            grid[c][r] = 1;
+          }
+        }
+      });
+
+      let dunnageBlocks = [];
+      let dunnageCounter = 1;
+
+      for (let c = 0; c < cols; c++) {
+        for (let r = 0; r < rows; r++) {
+          if (grid[c][r] === 0) {
+            let maxC = c;
+            while (maxC < cols && grid[maxC][r] === 0) maxC++;
+
+            let maxR = r;
+            let canExpandR = true;
+            while (canExpandR && maxR < rows) {
+              for (let tc = c; tc < maxC; tc++) {
+                if (grid[tc][maxR] === 1) {
+                  canExpandR = false;
+                  break;
+                }
+              }
+              if (canExpandR) maxR++;
+            }
+
+            for (let tc = c; tc < maxC; tc++) {
+              for (let tr = r; tr < maxR; tr++) {
+                grid[tc][tr] = 1;
+              }
+            }
+
+            const dunL = (maxC - c) * gridStep;
+            const dunW = (maxR - r) * gridStep;
+            const dunX = c * gridStep;
+            const dunY = r * gridStep;
+
+            if (dunL >= 20 && dunW >= 20) {
+              dunnageBlocks.push({
+                id: `D_SQ_${layerIdx}_${dunnageCounter++}`,
+                name: `Chêm vuông T${layerIdx}`,
+                x: dunX,
+                y: dunY,
+                z: layerZ,
+                l: dunL,
+                w: dunW,
+                h: layerH,
+                l_cm: dunL / 10,
+                w_cm: dunW / 10,
+                h_cm: layerH / 10,
+                layerIndex: layerIdx,
+                isDunnage: true
+              });
+            }
+          }
+        }
+      }
+      return dunnageBlocks;
+    }
+
+    /**
+     * Multi-Pallet with Secondary Sizing, 90% Threshold & Dunnage
+     */
+    function solveMultiPallet(mainPallet, rawItems, enforceFlatTop, flatTol, doZeroGap, doCenter, autoDunnage, prioritizeLargeBottom) {
+      let remainingItems = [...rawItems];
+      let pallets = [];
+      let palletId = 1;
+
+      const subPalSpec = getSubPalletDimensions(mainPallet.L, mainPallet.W);
+
+      while (remainingItems.length > 0 && palletId <= 6) {
+        const currentPalletSpec = (palletId === 1) ? { ...mainPallet } : {
+          L: subPalSpec.L,
+          W: subPalSpec.W,
+          H: mainPallet.H,
+          maxH: mainPallet.maxH,
+          maxWeight: Math.round(mainPallet.maxWeight * ((subPalSpec.L * subPalSpec.W) / (mainPallet.L * mainPallet.W))),
+          overhang: 0
+        };
+
+        const res = packPalletWithDunnage(currentPalletSpec, remainingItems, enforceFlatTop, flatTol, doZeroGap, doCenter, autoDunnage, prioritizeLargeBottom);
+
+        if (res.placed.length === 0) {
+          break;
+        }
+
+        pallets.push({
+          id: palletId,
+          name: (palletId === 1) ? `Pallet #1 (Chính: ${currentPalletSpec.L}x${currentPalletSpec.W})` : `Pallet #${palletId} (Phụ: ${currentPalletSpec.L}x${currentPalletSpec.W})`,
+          palletSpec: currentPalletSpec,
+          placed: res.placed,
+          dunnage: res.dunnage,
+          layers: res.layers,
+          totalWeight: res.totalWeight,
+          cargoL: res.cargoL,
+          cargoW: res.cargoW,
+          cargoH: res.cargoH
+        });
+
+        remainingItems = res.unpacked;
+        palletId++;
+      }
+
+      return { pallets, remainingUnpacked: remainingItems };
+    }
+
+    function autoSizeSinglePallet(rawItems, basePallet, enforceFlatTop, flatTol, doZeroGap, doCenter, autoDunnage, prioritizeLargeBottom) {
+      const totalWeight = rawItems.reduce((sum, item) => sum + item.wt, 0);
+
+      let testL = Math.max(1000, basePallet.L);
+      let testW = Math.max(800, basePallet.W);
+      let testMaxH = Math.max(1600, basePallet.maxH);
+
+      let bestPallet = null;
+
+      for (let step = 0; step < 30; step++) {
+        const testPallet = {
+          L: testL,
+          W: testW,
+          H: basePallet.H,
+          maxH: testMaxH,
+          maxWeight: Math.max(basePallet.maxWeight, totalWeight + 50),
+          overhang: 0
+        };
+
+        const res = packPalletWithDunnage(testPallet, rawItems, enforceFlatTop, flatTol, doZeroGap, doCenter, autoDunnage, prioritizeLargeBottom);
+        if (res.unpacked.length === 0) {
+          bestPallet = {
+            L: testL,
+            W: testW,
+            H: basePallet.H,
+            maxH: Math.round(res.cargoH + basePallet.H + 40),
+            maxWeight: Math.max(basePallet.maxWeight, Math.round(totalWeight + 50)),
+            overhang: 0
+          };
+          break;
+        }
+
+        if (testL <= testW) {
+          testL += 100;
+        } else {
+          testW += 100;
+        }
+        if (step % 3 === 0) {
+          testMaxH += 100;
+        }
+      }
+
+      return bestPallet || {
+        ...basePallet,
+        L: testL,
+        W: testW,
+        maxH: testMaxH
+      };
+    }
+
+    /* ==========================================================================
+       5. EXECUTION CONTROLLER
+       ========================================================================== */
+    function calculatePallet(isAutoSizing = false) { runPacking(isAutoSizing); }
+
+    function runPacking(isAutoSizing = false) {
+      const skus = getSkuListFromUI();
+      if (skus.length === 0) {
+        showAlert('Vui lòng thêm ít nhất một loại thùng hàng!', 'warning');
+        return;
+      }
+
+      let rawItems = [];
+      let itemId = 1;
+      skus.forEach(s => {
+        for (let i = 0; i < s.qty; i++) {
+          rawItems.push({
+            id: itemId++,
+            name: s.name,
+            l: s.l,
+            w: s.w,
+            h: s.h,
+            wt: s.wt,
+            color: s.color
+          });
+        }
+      });
+
+      const enforceFlatTop = document.getElementById('chkFlatTop').checked;
+      const flatTolEl = document.getElementById('flatTolerance');
+      const flatTol = flatTolEl ? parseFloat(flatTolEl.value) || 30 : 30;
+      const doZeroGap = document.getElementById('chkZeroGap').checked;
+      const doCenter = true;
+      const autoDunnage = document.getElementById('chkAutoDunnage').checked;
+      const prioritizeLargeBottom = document.getElementById('chkLargeBottom').checked;
+
+      let mainPallet = {
+        L: parseFloat(document.getElementById('palLength').value),
+        W: parseFloat(document.getElementById('palWidth').value),
+        H: parseFloat(document.getElementById('palHeight').value),
+        maxH: parseFloat(document.getElementById('palMaxHeight').value),
+        maxWeight: parseFloat(document.getElementById('palMaxWeight').value),
+        overhang: parseFloat(document.getElementById('palOverhang').value)
+      };
+
+      if (isAutoSizing) {
+        const optimal = autoSizeSinglePallet(rawItems, mainPallet, enforceFlatTop, flatTol, doZeroGap, doCenter, autoDunnage, prioritizeLargeBottom);
+        mainPallet = optimal;
+
+        document.getElementById('palLength').value = mainPallet.L;
+        document.getElementById('palWidth').value = mainPallet.W;
+        document.getElementById('palMaxHeight').value = mainPallet.maxH;
+        document.getElementById('palMaxWeight').value = mainPallet.maxWeight;
+        document.getElementById('palOverhang').value = 0;
+
+        showAlert(`✨ Đã tự động tối ưu kích thước Pallet (${mainPallet.L} x ${mainPallet.W} x ${mainPallet.maxH} mm) chêm lót carton và căn giữa trọn 100% hàng!`, 'success');
+      }
+
+      const multiResult = solveMultiPallet(mainPallet, rawItems, enforceFlatTop, flatTol, doZeroGap, doCenter, autoDunnage, prioritizeLargeBottom);
+      palletsResult = multiResult.pallets;
+
+      activePalletIndex = 0;
+      activeLayerIndex = -1;
+
+      renderPalletTabs();
+      switchActivePallet(0);
+      updateLegend(skus);
+      renderSummaryCard(rawItems.length, multiResult.remainingUnpacked);
+
+      if (!isAutoSizing) {
+        if (palletsResult.length === 1 && multiResult.remainingUnpacked.length === 0) {
+          showAlert(`✅ Hoàn tất! Đã xếp toàn bộ ${rawItems.length} thùng hàng thành khối đặc khít 100%. Các khe hở nhỏ đã được bù kín bằng bìa carton chêm lót!`, 'success');
+        } else if (palletsResult.length > 1) {
+          showAlert(`📦 Hàng không đủ tạo tầng &ge;90% đã tự động chuyển sang Pallet phụ (${palletsResult.length} kiện). Từng tầng đều đặc khít 100%, có chêm carton bù khoảng trống!`, 'success');
+        } else if (multiResult.remainingUnpacked.length > 0) {
+          showAlert(`⚠️ Đã đóng ${palletsResult[0].placed.length}/${rawItems.length} thùng. Còn ${multiResult.remainingUnpacked.length} thùng chưa đủ chỗ. Bấm "Tự Động Tối Ưu Kích Thước" để mở rộng 1 pallet chứa hết.`, 'warning');
+        }
+      }
+    }
+
+    function renderPalletTabs() {
+      const container = document.getElementById('palletTabButtons');
+      container.innerHTML = '';
+
+      palletsResult.forEach((pal, idx) => {
+        const btn = document.createElement('button');
+        btn.className = `pallet-tab ${idx === activePalletIndex ? 'active' : ''}`;
+        btn.innerText = `📦 ${pal.name} (${pal.placed.length} thùng)`;
+        btn.onclick = () => switchActivePallet(idx);
+        container.appendChild(btn);
+      });
+    }
+
+    function switchActivePallet(index) {
+      activePalletIndex = index;
+      activeLayerIndex = -1;
+
+      document.querySelectorAll('.pallet-tab').forEach((tab, idx) => {
+        tab.className = `pallet-tab ${idx === index ? 'active' : ''}`;
+      });
+
+      const currentPal = palletsResult[activePalletIndex];
+      if (!currentPal) return;
+
+      document.getElementById('palletStatusNote').innerText = `Đang hiển thị: ${currentPal.name} (Đặc khít 100% & Chêm carton)`;
+
+      renderPalletModel(currentPal.palletSpec.L, currentPal.palletSpec.W, currentPal.palletSpec.H);
+      renderCargoBoxesAndDunnage(currentPal);
+      renderLayerButtons(currentPal.layers);
+      updateKPIs(currentPal);
+      setupSlider(currentPal.placed.length + (currentPal.dunnage ? currentPal.dunnage.length : 0));
+      updateManualStudioOptions();
+    }
+
+    /* ==========================================================================
+       6. 3D CARGO & DUNNAGE RENDERING WITH GHOST VIEW
+       ========================================================================== */
+    function renderCargoBoxesAndDunnage(pal) {
+      if (!cargoGroup || !dunnageGroup) return;
+      while(cargoGroup.children.length > 0) {
+        cargoGroup.remove(cargoGroup.children[0]);
+      }
+      while(dunnageGroup.children.length > 0) {
+        dunnageGroup.remove(dunnageGroup.children[0]);
+      }
+      boxMeshes = [];
+      dunnageMeshes = [];
+
+      const pallet = pal.palletSpec;
+      const placedList = pal.placed;
+      const dunnageList = pal.dunnage || [];
+
+      const halfL = pallet.L / 2;
+      const halfW = pallet.W / 2;
+      const baseH = pallet.H;
+
+      // 1. Render Product Boxes
+      placedList.forEach((box, index) => {
+        const geom = new THREE.BoxGeometry(box.l, box.h, box.w);
+        const mat = new THREE.MeshLambertMaterial({
+          color: box.color,
+          transparent: true,
+          opacity: 0.96
+        });
+
+        const mesh = new THREE.Mesh(geom, mat);
+        const posX = -halfL + box.x + box.l / 2;
+        const posY = baseH + box.z + box.h / 2;
+        const posZ = -halfW + box.y + box.w / 2;
+
+        mesh.position.set(posX, posY, posZ);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+
+        const edgesGeom = new THREE.EdgesGeometry(geom);
+        const edgesMat = new THREE.LineBasicMaterial({ color: 0x0f172a, linewidth: 1.5 });
+        const edgeLine = new THREE.LineSegments(edgesGeom, edgesMat);
+        mesh.add(edgeLine);
+
+        mesh.userData = {
+          id: box.id,
+          name: box.name,
+          l: box.l,
+          w: box.w,
+          h: box.h,
+          wt: box.wt,
+          x: box.x,
+          y: box.y,
+          z: box.z,
+          color: box.color,
+          layerIndex: box.layerIndex,
+          index: index + 1,
+          edgeLine: edgeLine,
+          isDunnage: false
+        };
+
+        cargoGroup.add(mesh);
+        boxMeshes.push(mesh);
+      });
+
+      // 2. Render Corrugated Dunnage Blocks (Bìa Carton chêm lót)
+      const dunnageMat = new THREE.MeshStandardMaterial({
+        color: 0xb45309, // Kraft corrugated brown
+        roughness: 0.85,
+        metalness: 0.05
+      });
+
+      dunnageList.forEach((dun, dIdx) => {
+        const dGeom = new THREE.BoxGeometry(dun.l, dun.h, dun.w);
+        const dMesh = new THREE.Mesh(dGeom, dunnageMat);
+        const posX = -halfL + dun.x + dun.l / 2;
+        const posY = baseH + dun.z + dun.h / 2;
+        const posZ = -halfW + dun.y + dun.w / 2;
+
+        dMesh.position.set(posX, posY, posZ);
+        dMesh.castShadow = true;
+        dMesh.visible = dunnageVisible;
+        dMesh.receiveShadow = true;
+
+        const dEdgesGeom = new THREE.EdgesGeometry(dGeom);
+        const dEdgesMat = new THREE.LineBasicMaterial({ color: 0x78350f, linewidth: 2 });
+        const dEdgeLine = new THREE.LineSegments(dEdgesGeom, dEdgesMat);
+        dMesh.add(dEdgeLine);
+
+        dMesh.userData = {
+          id: dun.id,
+          name: dun.name,
+          l: dun.l,
+          w: dun.w,
+          h: dun.h,
+          wt: dun.wt,
+          x: dun.x,
+          y: dun.y,
+          z: dun.z,
+          layerIndex: dun.layerIndex,
+          edgeLine: dEdgeLine,
+          isDunnage: true
+        };
+
+        dunnageGroup.add(dMesh);
+        dunnageMeshes.push(dMesh);
+      });
+    }
+
+    function renderLayerButtons(layers) {
+      const container = document.getElementById('layerButtonGroup');
+      container.innerHTML = '';
+
+      const btnAll = document.createElement('button');
+      btnAll.className = `layer-btn ${activeLayerIndex === -1 ? 'active' : ''}`;
+      btnAll.innerText = 'Tất cả';
+      btnAll.onclick = () => selectLayer(-1);
+      container.appendChild(btnAll);
+
+      layers.forEach((lyr, idx) => {
+        const btn = document.createElement('button');
+        btn.className = `layer-btn ${activeLayerIndex === idx ? 'active' : ''}`;
+        const dunCount = lyr.dunnage ? lyr.dunnage.length : 0;
+        btn.innerText = `${lyr.name} (${lyr.count} thùng${dunCount > 0 ? ` + ${dunCount} chêm` : ''})`;
+        btn.onclick = () => selectLayer(idx);
+        container.appendChild(btn);
+      });
+    }
+
+    function selectLayer(layerIdx) {
+      activeLayerIndex = layerIdx;
+
+      document.querySelectorAll('#layerButtonGroup .layer-btn').forEach((btn, idx) => {
+        btn.className = `layer-btn ${(idx - 1) === layerIdx ? 'active' : ''}`;
+      });
+
+      const currentPal = palletsResult[activePalletIndex];
+      if (!currentPal) return;
+
+      if (layerIdx === -1) {
+        boxMeshes.forEach(m => {
+          m.material.opacity = 0.96;
+          m.material.transparent = true;
+          m.userData.edgeLine.material.color.setHex(0x0f172a);
+        });
+        dunnageMeshes.forEach(m => {
+          m.material.opacity = 1.0;
+          m.material.transparent = false;
+        });
+      } else {
+        const targetLayer = currentPal.layers[layerIdx];
+        if (!targetLayer) return;
+
+        boxMeshes.forEach(m => {
+          if (m.userData.layerIndex === targetLayer.index) {
+            m.material.opacity = 1.0;
+            m.material.transparent = false;
+            m.userData.edgeLine.material.color.setHex(0x000000);
+          } else {
+            m.material.opacity = 0.14;
+            m.material.transparent = true;
+            m.userData.edgeLine.material.color.setHex(0x94a3b8);
+          }
+        });
+
+        dunnageMeshes.forEach(m => {
+          if (m.userData.layerIndex === targetLayer.index) {
+            m.material.opacity = 1.0;
+            m.material.transparent = false;
+          } else {
+            m.material.opacity = 0.12;
+            m.material.transparent = true;
+          }
+        });
+      }
+    }
+
+    function updateKPIs(pal) {
+      const placed = pal.placed;
+      const dunnage = pal.dunnage || [];
+      const palletSpec = pal.palletSpec;
+
+      document.getElementById('kpiBoxCount').innerHTML = `${placed.length} <span class="kpi-sub">thùng</span>`;
+
+      let minX = Infinity, minY = Infinity;
+      let maxX = 0, maxY = 0, maxZ = 0;
+      let cargoVolume = 0;
+
+      placed.forEach(p => {
+        if (p.x < minX) minX = p.x;
+        if (p.y < minY) minY = p.y;
+        if (p.x + p.l > maxX) maxX = p.x + p.l;
+        if (p.y + p.w > maxY) maxY = p.y + p.w;
+        if (p.z + p.h > maxZ) maxZ = p.z + p.h;
+        cargoVolume += p.l * p.w * p.h;
+      });
+
+      const actualL = placed.length > 0 ? Math.round(maxX - minX) : 0;
+      const actualW = placed.length > 0 ? Math.round(maxY - minY) : 0;
+      const totalH = maxZ + palletSpec.H;
+
+      document.getElementById('kpiDimensions').innerHTML = `${(actualL/10).toFixed(0)} x ${(actualW/10).toFixed(0)} x ${Math.round(totalH/10)} <span class="kpi-sub">cm</span>`;
+
+      const grossWeight = Math.round(pal.totalWeight + (palletSpec.L < 1000 ? 15 : 25));
+      document.getElementById('kpiWeight').innerHTML = `${grossWeight} <span class="kpi-sub">/ ${palletSpec.maxWeight} kg</span>`;
+
+      const kpiPalSize = document.getElementById('kpiPalletSize'); if (kpiPalSize) kpiPalSize.innerHTML = `${palletSpec.L/10} x ${palletSpec.W/10} <span class="kpi-sub">cm</span>`;
+      document.getElementById('kpiDunnageCount').innerHTML = `${dunnage.length} <span class="kpi-sub">khối carton</span>`;
+      document.getElementById('kpiSolidStatus').innerText = '100% Đặc Khít (Có Chêm)';
+    }
+
+    function renderSummaryCard(totalReq, remainingUnpacked) {
+      const card = document.getElementById('breakdownCard');
+      const div = document.getElementById('palletSummaryList');
+      const dunnageDiv = document.getElementById('dunnageCutListDiv');
+      card.style.display = 'block';
+
+      // Build Dunnage Cut List across all pallets
+      let dunnageHtml = '';
+      let totalDunnageCount = 0;
+
+      palletsResult.forEach(p => {
+        if (p.dunnage && p.dunnage.length > 0) {
+          totalDunnageCount += p.dunnage.length;
+          dunnageHtml += `<div style="margin-top: 4px; font-weight: 700; color: var(--dunnage);">• ${p.name}:</div>`;
+          dunnageHtml += '<ul style="padding-left: 16px; margin-top: 2px;">';
+          p.dunnage.forEach(d => {
+            dunnageHtml += `<li><b>${d.name}:</b> Kích thước <b>${(d.l/10).toFixed(1)} x ${(d.w/10).toFixed(1)} x ${(d.h/10).toFixed(1)} cm</b> (Dày ${(d.h/10).toFixed(1)} cm)</li>`;
+          });
+          dunnageHtml += '</ul>';
+        }
+      });
+
+      if (totalDunnageCount === 0) {
+        dunnageDiv.innerHTML = '<span style="color: var(--slate-600); font-style: italic;">Không cần khối chêm lót (Các thùng xếp khít 100% sàn).</span>';
+      } else {
+        dunnageDiv.innerHTML = dunnageHtml;
+      }
+
+      // Pallet summary list
+      let html = '';
+      palletsResult.forEach(p => {
+        html += `<div style="margin-bottom: 4px; padding: 6px 8px; background: var(--slate-50); border: 1px solid var(--slate-200); border-radius: 6px;">
+          📦 <b>${p.name}:</b> ${p.placed.length} thùng | Kích thước: ${p.palletSpec.L}x${p.palletSpec.W}mm | Khối lượng: ${Math.round(p.totalWeight + 20)}kg | Số tầng: ${p.layers.length}
+        </div>`;
+      });
+
+      if (remainingUnpacked && remainingUnpacked.length > 0) {
+        html += `<div style="margin-top: 8px; color: var(--danger); font-weight: 600;">
+          ⚠️ Còn tồn ${remainingUnpacked.length} thùng chưa đủ điều kiện tạo tầng &ge;90%.
+        </div>`;
+      }
+      div.innerHTML = html;
+    }
+
+    function updateLegend(skus) {
+      const container = document.getElementById('legendItems');
+      container.innerHTML = '';
+      skus.forEach(s => {
+        const item = document.createElement('div');
+        item.className = 'legend-item';
+        item.innerHTML = `
+          <div class="legend-color" style="background: ${s.color};"></div>
+          <span>${s.name} (${s.l}x${s.w}x${s.h} mm, ${s.wt}kg)</span>
+        `;
+        container.appendChild(item);
+      });
+
+      // Add dunnage legend
+      const dunItem = document.createElement('div');
+      dunItem.className = 'legend-item';
+      dunItem.innerHTML = `
+        <div class="legend-color" style="background: #b45309; border: 1px solid #78350f;"></div>
+        <span style="font-weight: 600; color: #b45309;">Khối bìa carton chêm lót (Dunnage)</span>
+      `;
+      container.appendChild(dunItem);
+    }
+
+    function showAlert(msg, type) {
+      const alert = document.getElementById('statusAlert');
+      alert.style.display = 'block';
+      alert.className = `alert-banner alert-${type}`;
+      alert.innerText = msg;
+    }
+
+    /* ==========================================================================
+       7. STEP PLAYER & SLIDER
+       ========================================================================== */
+    function setupSlider(total) {
+      const slider = document.getElementById('stepSlider');
+      slider.max = total;
+      slider.value = total;
+      document.getElementById('stepCounter').innerText = `${total} / ${total}`;
+      updateBoxVisibility(total);
+    }
+
+    function onSliderChange(val) {
+      val = parseInt(val);
+      const totalMeshes = boxMeshes.length + dunnageMeshes.length;
+      document.getElementById('stepCounter').innerText = `${val} / ${totalMeshes}`;
+      updateBoxVisibility(val);
+    }
+
+    function updateBoxVisibility(count) {
+      boxMeshes.forEach((mesh, idx) => {
+        mesh.visible = (idx < count);
+      });
+      dunnageMeshes.forEach((mesh, idx) => {
+        mesh.visible = (boxMeshes.length + idx < count);
+      });
+    }
+
+    function togglePlay() {
+      const btn = document.getElementById('btnPlay');
+      const totalMeshes = boxMeshes.length + dunnageMeshes.length;
+      if (isPlaying) {
+        clearInterval(playInterval);
+        isPlaying = false;
+        btn.innerText = '▶ Phát';
+      } else {
+        const slider = document.getElementById('stepSlider');
+        if (parseInt(slider.value) >= totalMeshes) {
+          slider.value = 0;
+          updateBoxVisibility(0);
+        }
+        isPlaying = true;
+        btn.innerText = '⏸ Dừng';
+        playInterval = setInterval(() => {
+          let cur = parseInt(slider.value);
+          if (cur < totalMeshes) {
+            cur++;
+            slider.value = cur;
+            onSliderChange(cur);
+          } else {
+            clearInterval(playInterval);
+            isPlaying = false;
+            btn.innerText = '▶ Phát';
+          }
+        }, 120);
+      }
+    }
+
+    function resetStep() {
+      if (isPlaying) togglePlay();
+      const slider = document.getElementById('stepSlider');
+      slider.value = 0;
+      onSliderChange(0);
+    }
+
+    /* ==========================================================================
+       8. 2D BLUEPRINT MODAL & CANVAS RENDERING
+       ========================================================================== */
+    let currentModalLayerIdx = 0;
+
+    function openBlueprintModal() {
+      const modal = document.getElementById('blueprintModal');
+      modal.style.display = 'flex';
+
+      const currentPal = palletsResult[activePalletIndex];
+      if (!currentPal || currentPal.layers.length === 0) {
+        alert('Vui lòng thực hiện tính toán xếp Pallet trước khi mở sơ đồ cắt lớp!');
+        closeBlueprintModal();
+        return;
+      }
+
+      currentModalLayerIdx = 0;
+      renderModalLayerTabs(currentPal.layers);
+      draw2DLayerBlueprint(currentPal, currentModalLayerIdx);
+    }
+
+    function closeBlueprintModal() {
+      document.getElementById('blueprintModal').style.display = 'none';
+    }
+
+    function renderModalLayerTabs(layers) {
+      const container = document.getElementById('modalLayerTabs');
+      container.innerHTML = '';
+      layers.forEach((lyr, idx) => {
+        const tab = document.createElement('button');
+        tab.className = `blueprint-layer-tab ${idx === currentModalLayerIdx ? 'active' : ''}`;
+        const dunLen = lyr.dunnage ? lyr.dunnage.length : 0;
+        tab.innerText = `${lyr.name} (${lyr.count} thùng${dunLen > 0 ? ` + ${dunLen} chêm` : ''})`;
+        tab.onclick = () => {
+          currentModalLayerIdx = idx;
+          document.querySelectorAll('.blueprint-layer-tab').forEach((t, i) => {
+            t.className = `blueprint-layer-tab ${i === idx ? 'active' : ''}`;
+          });
+          draw2DLayerBlueprint(palletsResult[activePalletIndex], idx);
+        };
+        container.appendChild(tab);
+      });
+    }
+
+    function draw2DLayerBlueprint(pal, layerIdx) {
+      const canvas = document.getElementById('blueprintCanvas');
+      const ctx = canvas.getContext('2d');
+      const cw = canvas.width;
+      const ch = canvas.height;
+
+      ctx.clearRect(0, 0, cw, ch);
+
+      const palL = pal.palletSpec.L;
+      const palW = pal.palletSpec.W;
+      const layer = pal.layers[layerIdx];
+      if (!layer) return;
+
+      const pad = 40;
+      const scaleX = (cw - pad * 2) / palL;
+      const scaleY = (ch - pad * 2) / palW;
+      const scale = Math.min(scaleX, scaleY);
+
+      const originX = (cw - palL * scale) / 2;
+      const originY = (ch - palW * scale) / 2;
+
+      // Draw Pallet Boundary
+      ctx.fillStyle = '#fef3c7';
+      ctx.strokeStyle = '#b45309';
+      ctx.lineWidth = 2;
+      ctx.fillRect(originX, originY, palL * scale, palW * scale);
+      ctx.strokeRect(originX, originY, palL * scale, palW * scale);
+
+      // Nan gỗ
+      ctx.strokeStyle = '#fde68a';
+      ctx.lineWidth = 1;
+      const numLines = 6;
+      for (let i = 1; i < numLines; i++) {
+        const x = originX + (palL * scale / numLines) * i;
+        ctx.beginPath();
+        ctx.moveTo(x, originY);
+        ctx.lineTo(x, originY + palW * scale);
+        ctx.stroke();
+      }
+
+      // Draw Center Crosshairs
+      ctx.strokeStyle = 'rgba(180, 83, 9, 0.4)';
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(originX + (palL * scale) / 2, originY);
+      ctx.lineTo(originX + (palL * scale) / 2, originY + palW * scale);
+      ctx.moveTo(originX, originY + (palW * scale) / 2);
+      ctx.lineTo(originX + palL * scale, originY + (palW * scale) / 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // 1. Draw Product Boxes
+      layer.boxes.forEach((box, i) => {
+        const bx = originX + box.x * scale;
+        const by = originY + box.y * scale;
+        const bw = box.l * scale;
+        const bh = box.w * scale;
+
+        ctx.fillStyle = box.color;
+        ctx.fillRect(bx, by, bw, bh);
+
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(bx, by, bw, bh);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 11px system-ui';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const label = `#${i+1} ${box.name}`;
+        ctx.fillText(label, bx + bw / 2, by + bh / 2 - 6);
+
+        ctx.font = '9px system-ui';
+        ctx.fillText(`${box.l}x${box.w}mm`, bx + bw / 2, by + bh / 2 + 7);
+      });
+
+      // 2. Draw Dunnage Blocks (Chêm carton sọc chéo)
+      const dunnageList = dunnageVisible ? (layer.dunnage || []) : [];
+      dunnageList.forEach(dun => {
+        const dx = originX + dun.x * scale;
+        const dy = originY + dun.y * scale;
+        const dw = dun.l * scale;
+        const dh = dun.w * scale;
+
+        ctx.fillStyle = '#fef3c7';
+        ctx.fillRect(dx, dy, dw, dh);
+
+        // Draw diagonal hatch lines
+        ctx.strokeStyle = '#b45309';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let x = dx - dh; x < dx + dw; x += 12) {
+          ctx.moveTo(Math.max(dx, x), dy);
+          ctx.lineTo(Math.min(dx + dw, x + dh), dy + dh);
+        }
+        ctx.stroke();
+
+        ctx.strokeStyle = '#92400e';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(dx, dy, dw, dh);
+
+        ctx.fillStyle = '#78350f';
+        ctx.font = 'bold 10px system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillText('CHÊM CARTON', dx + dw / 2, dy + dh / 2 - 5);
+        ctx.font = '9px system-ui';
+        ctx.fillText(`${dun.l}x${dun.w}mm`, dx + dw / 2, dy + dh / 2 + 7);
+      });
+
+      document.getElementById('modalLayerTitle').innerText = `${pal.name} - ${layer.name}`;
+      document.getElementById('modalLayerStats').innerHTML = `
+        • <b>Cao độ sàn:</b> Z = ${layer.zMin} mm<br>
+        • <b>Chiều cao lớp:</b> H = ${layer.height} mm (Z: ${layer.zMin} - ${layer.zMax} mm)<br>
+        • <b>Thùng hàng:</b> ${layer.count} thùng (phủ ${layer.coverage}% sàn)<br>
+        • <b>Khối chêm lót carton:</b> ${dunnageList.length} khối bù khoảng trống<br>
+        • <b>Trạng thái chịu lực:</b> 100% Đặc Khít (Tạo bệ phẳng đỡ tầng trên)
+      `;
+    }
+
+
+
+    /* ==========================================================================
+       10. 3D DRAG & DROP AND KEYBOARD ROTATION CONTROLS
+       ========================================================================== */
+    let dragModeEnabled = true;
+    let isDragging = false;
+    let draggedMesh = null;
+    let dragPlane = null;
+    let planeIntersect = null;
+    let dragOffset = null;
+    let pointerDownPos = { x: 0, y: 0 };
+
+    function init3DDragControls() {
+      if (typeof THREE === 'undefined') return;
+      dragPlane = new THREE.Plane();
+      planeIntersect = new THREE.Vector3();
+      dragOffset = new THREE.Vector3();
+
+      if (renderer && renderer.domElement) {
+        renderer.domElement.addEventListener('pointerdown', on3DPointerDown, false);
+        renderer.domElement.addEventListener('pointermove', on3DPointerMove, false);
+        renderer.domElement.addEventListener('pointerup', on3DPointerUp, false);
+        renderer.domElement.addEventListener('pointercancel', on3DPointerUp, false);
+      }
+
+      window.addEventListener('keydown', on3DKeyDown, false);
+    }
+
+    function toggleDragMode() {
+      dragModeEnabled = !dragModeEnabled;
+      const btn = document.getElementById('btnToggleDragMode');
+      if (btn) {
+        btn.innerHTML = dragModeEnabled ? '✋ Kéo Thả 3D: BẬT' : '✋ Kéo Thả 3D: TẮT';
+        btn.style.background = dragModeEnabled ? '#e0e7ff' : '#f1f5f9';
+        btn.style.color = dragModeEnabled ? '#3730a3' : '#64748b';
+        btn.style.borderColor = dragModeEnabled ? '#6366f1' : '#cbd5e1';
+      }
+      showAlert(dragModeEnabled ? '✋ Đã BẬT chế độ kéo thả thùng 3D. Nhấp giữ chuột trái trên thùng để di chuyển!' : '✋ Đã TẮT chế độ kéo thả 3D. Chuột quay về điều khiển xoay camera phối cảnh!', 'info');
+    }
+
+    function on3DPointerDown(event) {
+      if (!renderer || !camera || !raycaster) return;
+      pointerDownPos.x = event.clientX;
+      pointerDownPos.y = event.clientY;
+
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const visibleBoxMeshes = boxMeshes.filter(m => m.visible);
+      const intersects = raycaster.intersectObjects(visibleBoxMeshes);
+
+      if (intersects.length > 0) {
+        const clickedMesh = intersects[0].object;
+        draggedMesh = clickedMesh;
+        selectBoxForCustomEdit(clickedMesh.userData);
+
+        if (dragModeEnabled) {
+          isDragging = true;
+          if (controls) controls.enabled = false;
+
+          // Drag plane parallel to pallet floor (Y = mesh.position.y)
+          const planeY = draggedMesh.position.y;
+          dragPlane.set(new THREE.Vector3(0, 1, 0), -planeY);
+
+          if (raycaster.ray.intersectPlane(dragPlane, planeIntersect)) {
+            dragOffset.copy(draggedMesh.position).sub(planeIntersect);
+          }
+          renderer.domElement.style.cursor = 'grabbing';
+        }
+      }
+    }
+
+    function on3DPointerMove(event) {
+      if (!renderer || !camera || !raycaster) return;
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+      if (isDragging && draggedMesh && dragModeEnabled) {
+        raycaster.setFromCamera(mouse, camera);
+        if (raycaster.ray.intersectPlane(dragPlane, planeIntersect)) {
+          let newPosX = planeIntersect.x + dragOffset.x;
+          let newPosZ = planeIntersect.z + dragOffset.z;
+
+          const currentPal = palletsResult[activePalletIndex];
+          if (currentPal) {
+            const pal = currentPal.palletSpec;
+            const halfL = pal.L / 2;
+            const halfW = pal.W / 2;
+            const b = draggedMesh.userData;
+
+            newPosX = Math.max(-halfL + b.l / 2, Math.min(halfL - b.l / 2, newPosX));
+            newPosZ = Math.max(-halfW + b.w / 2, Math.min(halfW - b.w / 2, newPosZ));
+
+            // 1cm snap grid
+            newPosX = Math.round(newPosX / 10) * 10;
+            newPosZ = Math.round(newPosZ / 10) * 10;
+
+            draggedMesh.position.x = newPosX;
+            draggedMesh.position.z = newPosZ;
+
+            // Live HUD coordinates
+            const liveX_cm = ((newPosX + halfL - b.l / 2) / 10).toFixed(1);
+            const liveY_cm = ((newPosZ + halfW - b.w / 2) / 10).toFixed(1);
+            const infoEl = document.getElementById('selectedBoxInfo');
+            if (infoEl) {
+              infoEl.innerHTML = `Kích thước: <b>${(b.l/10).toFixed(1)} x ${(b.w/10).toFixed(1)} x ${(b.h/10).toFixed(1)} cm</b><br>Tọa độ: <b>X = ${liveX_cm} cm, Y = ${liveY_cm} cm, Z = ${(b.z/10).toFixed(1)} cm</b> <span style="color: #f59e0b; font-weight: 700;">(Đang kéo...)</span>`;
+            }
+          }
+        }
+      } else {
+        // Standard hover cursor
+        raycaster.setFromCamera(mouse, camera);
+        const visibleBoxMeshes = boxMeshes.filter(m => m.visible);
+        const intersects = raycaster.intersectObjects(visibleBoxMeshes);
+        if (intersects.length > 0) {
+          renderer.domElement.style.cursor = dragModeEnabled ? 'grab' : 'pointer';
+        } else {
+          renderer.domElement.style.cursor = 'default';
+        }
+      }
+    }
+
+    function on3DPointerUp(event) {
+      if (controls) controls.enabled = true;
+      if (renderer && renderer.domElement) {
+        renderer.domElement.style.cursor = dragModeEnabled ? 'grab' : 'default';
+      }
+
+      if (isDragging && draggedMesh) {
+        isDragging = false;
+        const currentPal = palletsResult[activePalletIndex];
+        if (currentPal) {
+          const pal = currentPal.palletSpec;
+          const halfL = pal.L / 2;
+          const halfW = pal.W / 2;
+          const box = currentPal.placed.find(b => b.id === draggedMesh.userData.id);
+          if (box) {
+            box.x = Math.round(draggedMesh.position.x + halfL - box.l / 2);
+            box.y = Math.round(draggedMesh.position.z + halfW - box.w / 2);
+            reRenderCurrentPallet();
+            selectBoxForCustomEdit(box);
+            showAlert(`✋ Đã di chuyển ${box.name} đến vị trí: X = ${(box.x/10).toFixed(1)} cm, Y = ${(box.y/10).toFixed(1)} cm`, 'success');
+          }
+        }
+      }
+      draggedMesh = null;
+    }
+
+    function on3DKeyDown(e) {
+      // Ignore if user is typing in inputs or textareas
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+        return;
+      }
+
+      if (!selectedBoxId) return;
+
+      if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault();
+        rotateSelectedBoxHoriz();
+      } else if (e.key === 'f' || e.key === 'F' || e.key === 't' || e.key === 'T') {
+        e.preventDefault();
+        rotateSelectedBox3D();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        moveSelectedBox(-5, 0);
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        moveSelectedBox(5, 0);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        moveSelectedBox(0, 5);
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        moveSelectedBox(0, -5);
+      } else if (e.key === 'PageUp') {
+        e.preventDefault();
+        moveSelectedBoxLayer(1);
+      } else if (e.key === 'PageDown') {
+        e.preventDefault();
+        moveSelectedBoxLayer(-1);
+      } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        deleteSelectedBox();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        deselectBox();
+      }
+    }
+
+
+    /* ==========================================================================
+       11. WHOLE LAYER SWAPPING & REORDERING (ĐỔI CÁC TẦNG CHO NHAU)
+       ========================================================================== */
+    function recalculateLayerHeightsAndCoordinates(pal) {
+      if (!pal || !pal.layers) return;
+      let currentZ = 0;
+      let maxX = 0, maxY = 0;
+      let totalWt = 0;
+
+      pal.layers.forEach((layer, i) => {
+        const newLayerIdx = i + 1;
+        layer.index = newLayerIdx;
+        layer.name = `Tầng ${newLayerIdx}`;
+        const layerH = Math.max(...layer.boxes.map(b => b.h), 100);
+        layer.zMin = currentZ;
+        layer.zMax = currentZ + layerH;
+        layer.height = layerH;
+
+        let layerWt = 0;
+        layer.boxes.forEach(b => {
+          b.layerIndex = newLayerIdx;
+          b.z = currentZ;
+          layerWt += (b.wt || 10);
+          if (b.x + b.l > maxX) maxX = b.x + b.l;
+          if (b.y + b.w > maxY) maxY = b.y + b.w;
+        });
+        layer.weight = Math.round(layerWt);
+        totalWt += layerWt;
+
+        if (layer.dunnage) {
+          layer.dunnage.forEach(d => {
+            d.layerIndex = newLayerIdx;
+            d.z = currentZ;
+            d.h = layerH;
+          });
+        }
+
+        currentZ += layerH;
+      });
+
+      pal.cargoL = maxX;
+      pal.cargoW = maxY;
+      pal.cargoH = currentZ;
+      pal.totalWeight = totalWt;
+
+      // Sync placed and dunnage flat lists
+      pal.placed = [];
+      pal.dunnage = [];
+      pal.layers.forEach(l => {
+        pal.placed.push(...l.boxes);
+        if (l.dunnage) pal.dunnage.push(...l.dunnage);
+      });
+    }
+
+    function swapTwoLayersInPallet(pal, idxA, idxB) {
+      if (!pal || !pal.layers || pal.layers.length < 2) return;
+      const a = idxA - 1; // 0-based
+      const b = idxB - 1; // 0-based
+      if (a < 0 || a >= pal.layers.length || b < 0 || b >= pal.layers.length) return;
+
+      // Swap in pal.layers array
+      const temp = pal.layers[a];
+      pal.layers[a] = pal.layers[b];
+      pal.layers[b] = temp;
+
+      // Recalculate all coordinates and heights
+      recalculateLayerHeightsAndCoordinates(pal);
+    }
+
+    function executeSwapTwoLayers() {
+      const currentPal = palletsResult[activePalletIndex];
+      if (!currentPal || !currentPal.layers || currentPal.layers.length < 2) {
+        showAlert('⚠️ Cần ít nhất 2 tầng để có thể hoán đổi tầng!', 'warning');
+        return;
+      }
+
+      const selectA = document.getElementById('swapLayerSelectA');
+      const selectB = document.getElementById('swapLayerSelectB');
+      if (!selectA || !selectB) return;
+
+      const idxA = parseInt(selectA.value);
+      const idxB = parseInt(selectB.value);
+
+      if (idxA === idxB) {
+        showAlert('⚠️ Vui lòng chọn 2 tầng khác nhau để hoán đổi!', 'warning');
+        return;
+      }
+
+      swapTwoLayersInPallet(currentPal, idxA, idxB);
+      reRenderCurrentPallet();
+      showAlert(`🔄 Đã hoán đổi toàn bộ thùng giữa Tầng ${idxA} và Tầng ${idxB}!`, 'success');
+    }
+
+    function moveActiveLayerStep(delta) {
+      const currentPal = palletsResult[activePalletIndex];
+      if (!currentPal || !currentPal.layers || currentPal.layers.length < 2) {
+        showAlert('⚠️ Cần ít nhất 2 tầng để di chuyển tầng!', 'warning');
+        return;
+      }
+
+      if (activeLayerIndex === -1) {
+        showAlert('💡 Vui lòng nhấp chọn một tầng cụ thể trên thanh Cắt Lớp trước khi bấm di chuyển tầng!', 'info');
+        return;
+      }
+
+      const curLayerNum = activeLayerIndex + 1; // 1-based
+      const targetLayerNum = curLayerNum + delta;
+
+      if (targetLayerNum < 1) {
+        showAlert('⚠️ Tầng này đã ở vị trí đáy (Tầng 1), không thể hạ thấp hơn!', 'warning');
+        return;
+      }
+      if (targetLayerNum > currentPal.layers.length) {
+        showAlert('⚠️ Tầng này đã ở vị trí cao nhất, không thể nâng cao hơn!', 'warning');
+        return;
+      }
+
+      swapTwoLayersInPallet(currentPal, curLayerNum, targetLayerNum);
+      activeLayerIndex = targetLayerNum - 1; // follow the moved layer
+      reRenderCurrentPallet();
+      selectLayer(activeLayerIndex);
+      showAlert(`🔄 Đã chuyển toàn bộ Tầng ${curLayerNum} sang vị trí Tầng ${targetLayerNum}!`, 'success');
+    }
+
+    function autoReorderLayersLargeBottom() {
+      const currentPal = palletsResult[activePalletIndex];
+      if (!currentPal || !currentPal.layers || currentPal.layers.length < 2) {
+        showAlert('⚠️ Cần ít nhất 2 tầng để sắp xếp lại theo kích thước!', 'warning');
+        return;
+      }
+
+      // Calculate score for each layer: larger footprint and heavier weight at the bottom
+      currentPal.layers.forEach(lyr => {
+        const boxes = lyr.boxes;
+        const maxFootprint = Math.max(...boxes.map(b => b.l * b.w), 0);
+        const avgFootprint = boxes.length > 0 ? (boxes.reduce((sum, b) => sum + (b.l * b.w), 0) / boxes.length) : 0;
+        const totWt = boxes.reduce((sum, b) => sum + (b.wt || 10), 0);
+        lyr._reorderScore = maxFootprint * 1000 + avgFootprint * 100 + totWt;
+      });
+
+      // Sort layers descending by score (largest/heaviest first -> index 0 = Tầng 1)
+      currentPal.layers.sort((a, b) => b._reorderScore - a._reorderScore);
+
+      recalculateLayerHeightsAndCoordinates(currentPal);
+      reRenderCurrentPallet();
+      showAlert('⚖️ Đã tự động sắp xếp lại các tầng: Tầng có thùng lớn và nặng nhất được ưu tiên xếp ở đáy (Tầng 1)!', 'success');
+    }
+
+    function moveSelectedBoxToSpecificLayer() {
+      if (!selectedBoxId) return;
+      const currentPal = palletsResult[activePalletIndex];
+      if (!currentPal) return;
+
+      const box = currentPal.placed.find(b => b.id === selectedBoxId);
+      if (!box) return;
+
+      const select = document.getElementById('selectedBoxLayerDirectSelect');
+      if (!select) return;
+
+      const targetLayer = parseInt(select.value);
+      if (!targetLayer || targetLayer === box.layerIndex) return;
+
+      const totalLayers = currentPal.layers ? currentPal.layers.length : 1;
+      box.layerIndex = targetLayer;
+
+      if (targetLayer <= totalLayers && currentPal.layers[targetLayer - 1]) {
+        box.z = currentPal.layers[targetLayer - 1].zMin;
+      } else {
+        box.z = currentPal.cargoH || (totalLayers * 200);
+      }
+
+      reRenderCurrentPallet();
+      selectBoxForCustomEdit(box);
+      showAlert(`📦 Đã chuyển ${box.name} sang Tầng ${targetLayer}!`, 'success');
+    }
+
+    /* ==========================================================================
+       8. CUSTOM PACKING COMMENTS & NOTES MANAGEMENT
+       ========================================================================== */
+    function getSavedComment() {
+      return localStorage.getItem('pallet_custom_packing_note') || '';
+    }
+
+    function initCommentSection() {
+      const saved = getSavedComment();
+      const textarea = document.getElementById('palletCommentText');
+      if (textarea) {
+        textarea.value = saved;
+      }
+      updateCommentBanner(saved);
+    }
+
+    function onCommentInput() {
+      const text = document.getElementById('palletCommentText').value;
+      updateCommentBanner(text);
+    }
+
+    function updateCommentBanner(text) {
+      const banner = document.getElementById('kpiCommentBanner');
+      const display = document.getElementById('kpiCommentDisplay');
+      if (!banner || !display) return;
+      if (text && text.trim().length > 0) {
+        banner.style.display = 'block';
+        display.innerText = text.trim();
+      } else {
+        banner.style.display = 'none';
+      }
+    }
+
+    function saveCustomComment() {
+      const text = document.getElementById('palletCommentText').value.trim();
+      localStorage.setItem('pallet_custom_packing_note', text);
+      updateCommentBanner(text);
+
+      const msg = document.getElementById('commentSavedMsg');
+      if (msg) {
+        msg.style.display = 'block';
+        setTimeout(() => { msg.style.display = 'none'; }, 2500);
+      }
+      showAlert('💾 Đã lưu ghi chú tùy chỉnh đóng gói thành công!', 'success');
+    }
+
+    function clearCustomComment() {
+      if (!confirm('Bạn có chắc chắn muốn xóa ghi chú này?')) return;
+      document.getElementById('palletCommentText').value = '';
+      localStorage.removeItem('pallet_custom_packing_note');
+      updateCommentBanner('');
+      showAlert('🗑️ Đã xóa ghi chú.', 'info');
+    }
+
+    /* ==========================================================================
+       9. PRINT / EXPORT ALL LAYERS PACKING SHEET & DUNNAGE CUT LIST
+       ========================================================================== */
+    function triggerPrintReport() {
+      if (palletsResult.length === 0) {
+        alert('Vui lòng thực hiện tính toán sắp xếp hàng trước khi in báo cáo!');
+        return;
+      }
+
+      const printArea = document.getElementById('printReportArea');
+      printArea.innerHTML = '';
+
+      let html = `
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+          <h1 style="font-size: 20px; border-bottom: 2px solid #000; padding-bottom: 8px;">
+            HƯỚNG DẪN ĐÓNG GÓI PALLET (PALLET LOADING & PACKING SHEET)
+          </h1>
+          <p style="font-size: 12px; color: #555; margin-bottom: 16px;">
+            Ngày tạo: ${new Date().toLocaleString('vi-VN')} • Tiêu chuẩn: Phủ &ge;90%, Chêm lót bìa carton bù khoảng trống 100%
+          </p>
+      `;
+
+      palletsResult.forEach(pal => {
+        html += `
+          <div style="page-break-after: always; margin-bottom: 30px;">
+            <h2 style="font-size: 16px; background: #e2e8f0; padding: 8px 12px; margin-top: 14px;">
+              📦 KIỆN HÀNG: ${pal.name}
+            </h2>
+            <div style="font-size: 12px; line-height: 1.6; margin: 10px 0;">
+              • <b>Kích thước Pallet:</b> ${pal.palletSpec.L} x ${pal.palletSpec.W} x ${pal.palletSpec.maxH} mm<br>
+              • <b>Tổng số thùng:</b> ${pal.placed.length} thùng | <b>Tổng khối lượng kiện:</b> ${Math.round(pal.totalWeight + 20)} kg<br>
+              • <b>Số tầng hàng:</b> ${pal.layers.length} tầng | <b>Số khối chêm carton:</b> ${pal.dunnage ? pal.dunnage.length : 0} khối
+            </div>
+
+            <!-- Custom User Instructions & Packing Notes -->
+            ${getSavedComment() ? `
+            <div style="margin: 12px 0; border: 1.5px solid #2563eb; background: #eff6ff; padding: 10px 14px; border-radius: 6px;">
+              <h4 style="font-size: 13px; color: #1e40af; margin-bottom: 4px;">💬 GHI CHÚ &amp; YÊU CẦU ĐÓNG GÓI RIÊNG:</h4>
+              <div style="font-size: 12px; color: #1e3a8a; line-height: 1.5; white-space: pre-line;">${getSavedComment()}</div>
+            </div>` : ''}
+
+            <!-- Dunnage Cut List Table -->
+            <div style="margin: 12px 0; border: 1px dashed #b45309; background: #fffbeb; padding: 10px; border-radius: 6px;">
+              <h4 style="font-size: 13px; color: #92400e; margin-bottom: 6px;">📋 DANH MỤC BÌA CARTON CHÊM LÓT CẦN CẮT (DUNNAGE CUT LIST):</h4>
+              <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                <thead>
+                  <tr style="background: #fef3c7; border-bottom: 1px solid #d97706;">
+                    <th style="padding: 4px; text-align: left;">Tên Khối Chêm</th>
+                    <th style="padding: 4px; text-align: center;">Tầng</th>
+                    <th style="padding: 4px; text-align: center;">Kích Thước (Dài x Rộng x Dày mm)</th>
+                    <th style="padding: 4px; text-align: center;">Số Lượng</th>
+                  </tr>
+                </thead>
+                <tbody>
+        `;
+
+        if (!pal.dunnage || pal.dunnage.length === 0) {
+          html += '<tr><td colspan="4" style="text-align: center; padding: 6px; color: #666;">Không cần khối chêm (Thùng hàng phủ khít 100%).</td></tr>';
+        } else {
+          pal.dunnage.forEach(dun => {
+            html += `
+              <tr style="border-bottom: 1px solid #fed7aa;">
+                <td style="padding: 4px;">${dun.name}</td>
+                <td style="padding: 4px; text-align: center;">Tầng ${dun.layerIndex}</td>
+                <td style="padding: 4px; text-align: center; font-weight: bold;">${dun.l} x ${dun.w} x ${dun.h} mm</td>
+                <td style="padding: 4px; text-align: center;">1 miếng</td>
+              </tr>
+            `;
+          });
+        }
+
+        html += `
+                </tbody>
+              </table>
+            </div>
+
+            <h3 style="font-size: 14px; margin-top: 16px; margin-bottom: 8px;">SƠ ĐỒ BỐC XẾP CHI TIẾT TỪNG TẦNG (TỪ ĐÁY LÊN ĐỈNH):</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        `;
+
+        pal.layers.forEach((lyr, lIdx) => {
+          html += `
+            <div style="border: 1px solid #ccc; border-radius: 8px; padding: 12px; text-align: center;">
+              <h4 style="font-size: 13px; margin-bottom: 6px; color: #1e293b;">
+                ${lyr.name} (Z: ${lyr.zMin} - ${lyr.zMax} mm) - ${lyr.count} thùng
+              </h4>
+              <canvas id="printCanvas_${pal.id}_${lIdx}" width="340" height="300" style="border: 1px solid #aaa; background: #fff;"></canvas>
+            </div>
+          `;
+        });
+
+        html += `
+            </div>
+          </div>
+        `;
+      });
+
+      html += `</div>`;
+      printArea.innerHTML = html;
+
+      setTimeout(() => {
+        palletsResult.forEach(pal => {
+          pal.layers.forEach((lyr, lIdx) => {
+            const canvas = document.getElementById(`printCanvas_${pal.id}_${lIdx}`);
+            if (canvas) {
+              const ctx = canvas.getContext('2d');
+              const cw = canvas.width, ch = canvas.height;
+              const pad = 24;
+              const scale = Math.min((cw - pad*2) / pal.palletSpec.L, (ch - pad*2) / pal.palletSpec.W);
+              const ox = (cw - pal.palletSpec.L * scale) / 2;
+              const oy = (ch - pal.palletSpec.W * scale) / 2;
+
+              ctx.fillStyle = '#fef3c7';
+              ctx.strokeStyle = '#b45309';
+              ctx.fillRect(ox, oy, pal.palletSpec.L * scale, pal.palletSpec.W * scale);
+              ctx.strokeRect(ox, oy, pal.palletSpec.L * scale, pal.palletSpec.W * scale);
+
+              // Boxes
+              lyr.boxes.forEach((b, i) => {
+                const bx = ox + b.x * scale;
+                const by = oy + b.y * scale;
+                const bw = b.l * scale;
+                const bh = b.w * scale;
+
+                ctx.fillStyle = b.color;
+                ctx.fillRect(bx, by, bw, bh);
+                ctx.strokeStyle = '#000';
+                ctx.strokeRect(bx, by, bw, bh);
+
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 9px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(`#${i+1} ${b.name}`, bx + bw/2, by + bh/2);
+              });
+
+              // Dunnage
+              (lyr.dunnage || []).forEach(dun => {
+                const dx = ox + dun.x * scale;
+                const dy = oy + dun.y * scale;
+                const dw = dun.l * scale;
+                const dh = dun.w * scale;
+
+                ctx.fillStyle = '#fed7aa';
+                ctx.fillRect(dx, dy, dw, dh);
+                ctx.strokeStyle = '#c2410c';
+                ctx.strokeRect(dx, dy, dw, dh);
+
+                ctx.fillStyle = '#7c2d12';
+                ctx.font = 'bold 8px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(`CHÊM ${dun.l}x${dun.w}`, dx + dw/2, dy + dh/2);
+              });
+            }
+          });
+        });
+
+        window.print();
+      }, 200);
+    }
+
+    /* ==========================================================================
+       10. CAMERA VIEW CONTROLS & RAYCASTING TOOLTIP
+       ========================================================================== */
+    function setViewAngle(type) {
+      const dist = 3200;
+      if (type === 'iso') {
+        camera.position.set(2000, 2000, 2400);
+      } else if (type === 'top') {
+        camera.position.set(0, dist, 0);
+      } else if (type === 'front') {
+        camera.position.set(0, 500, dist);
+      } else if (type === 'side') {
+        camera.position.set(dist, 500, 0);
+      }
+      controls.target.set(0, 400, 0);
+      controls.update();
+    }
+
+    function resetCamera() {
+      setViewAngle('iso');
+    }
+
+    function onMouseMove(event) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const allMeshes = [...boxMeshes, ...dunnageMeshes].filter(m => m.visible);
+      const intersects = raycaster.intersectObjects(allMeshes);
+
+      const tooltip = document.getElementById('tooltip');
+      if (intersects.length > 0) {
+        const d = intersects[0].object.userData;
+        tooltip.style.display = 'block';
+        tooltip.style.left = (event.clientX + 14) + 'px';
+        tooltip.style.top = (event.clientY + 14) + 'px';
+
+        if (d.isDunnage) {
+          tooltip.innerHTML = `
+            <b style="color: #f59e0b;">📦 [Khối Chêm Carton]</b><br>
+            Kích thước: <b>${(d.l/10).toFixed(1)} x ${(d.w/10).toFixed(1)} x ${(d.h/10).toFixed(1)} cm</b> (${d.l}x${d.w}x${d.h} mm)<br>
+            Tầng: ${d.layerIndex} | Tác dụng: Bù khoảng trống đỡ tầng trên
+          `;
+        } else {
+          tooltip.innerHTML = `
+            <b>[#${d.index}] ${d.name}</b> (Tầng ${d.layerIndex})<br>
+            Kích thước: ${d.l} x ${d.w} x ${d.h} mm<br>
+            Khối lượng: ${d.wt} kg<br>
+            Tọa độ (X, Y, Z): (${Math.round(d.x)}, ${Math.round(d.y)}, ${Math.round(d.z)})
+          `;
+        }
+      } else {
+        tooltip.style.display = 'none';
+      }
+    }
+
+
+    /* ==========================================================================
+       7. DUNNAGE VISIBILITY & MANUAL STACKING STUDIO (TỰ XẾP THEO Ý RIÊNG)
+       ========================================================================== */
+    let dunnageVisible = true;
+    let selectedBoxId = null;
+
+    function toggleDunnageVisibility() {
+      dunnageVisible = !dunnageVisible;
+
+      // Update button in view-controls
+      const btn = document.getElementById('btnToggleDunnage');
+      if (btn) {
+        btn.innerHTML = dunnageVisible ? '👁️ Ẩn Tấm Chêm' : '📦 Hiện Tấm Chêm';
+        btn.style.background = dunnageVisible ? '#fef3c7' : '#e0e7ff';
+        btn.style.color = dunnageVisible ? '#92400e' : '#3730a3';
+        btn.style.borderColor = dunnageVisible ? '#f59e0b' : '#6366f1';
+      }
+
+      // Update checkbox in sidebar
+      const chk = document.getElementById('chkDunnageVisibility');
+      if (chk) chk.checked = dunnageVisible;
+
+      // Update 3D meshes
+      dunnageMeshes.forEach(mesh => {
+        const belongsToActiveLayer = (activeLayerIndex === -1 || mesh.userData.layerIndex === activeLayerIndex + 1);
+        mesh.visible = dunnageVisible && belongsToActiveLayer;
+      });
+
+      // Update 2D blueprint if modal is open
+      if (document.getElementById('blueprintModal') && document.getElementById('blueprintModal').style.display === 'flex') {
+        const currentPal = palletsResult[activePalletIndex];
+        if (currentPal) {
+          draw2DLayerBlueprint(currentPal, activeModalLayerIndex);
+        }
+      }
+
+      showAlert(dunnageVisible ? '📦 Đã bật hiển thị các tấm chêm carton vuông vức.' : '👁️ Đã ẩn các tấm chêm carton. Hiện đang hiển thị nguyên bản các thùng hàng thực tế!', 'info');
+    }
+
+    function on3DCanvasClick(event) {
+      if (!renderer || !camera || !raycaster) return;
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const visibleBoxMeshes = boxMeshes.filter(m => m.visible);
+      const intersects = raycaster.intersectObjects(visibleBoxMeshes);
+
+      if (intersects.length > 0) {
+        const clickedMesh = intersects[0].object;
+        selectBoxForCustomEdit(clickedMesh.userData);
+      }
+    }
+
+    function selectBoxForCustomEdit(boxData) {
+      selectedBoxId = boxData.id;
+
+      // Highlight in 3D
+      boxMeshes.forEach(mesh => {
+        if (mesh.userData.id === selectedBoxId) {
+          if (mesh.material && mesh.material.emissive) {
+            mesh.material.emissive.setHex(0xf59e0b);
+          }
+          if (mesh.userData.edgeLine && mesh.userData.edgeLine.material && mesh.userData.edgeLine.material.color) {
+            mesh.userData.edgeLine.material.color.setHex(0xd97706);
+          }
+        } else {
+          if (mesh.material && mesh.material.emissive) {
+            mesh.material.emissive.setHex(0x000000);
+          }
+          if (mesh.userData.edgeLine && mesh.userData.edgeLine.material && mesh.userData.edgeLine.material.color) {
+            mesh.userData.edgeLine.material.color.setHex(0x0f172a);
+          }
+        }
+      });
+
+      // Show and populate Selected Box Inspector
+      const panel = document.getElementById('selectedBoxPanel');
+      if (panel) {
+        panel.style.display = 'block';
+        const directSelect = document.getElementById('selectedBoxLayerDirectSelect');
+        if (directSelect) directSelect.value = boxData.layerIndex || 1;
+        document.getElementById('selectedBoxTitle').innerHTML = `📦 Thùng #${boxData.index || 1}: <b>${boxData.name}</b>`;
+        document.getElementById('selectedBoxInfo').innerHTML = `
+          Kích thước: <b>${(boxData.l/10).toFixed(1)} x ${(boxData.w/10).toFixed(1)} x ${(boxData.h/10).toFixed(1)} cm</b><br>
+          Tọa độ: <b>X = ${(boxData.x/10).toFixed(1)} cm, Y = ${(boxData.y/10).toFixed(1)} cm, Z = ${(boxData.z/10).toFixed(1)} cm</b> (Tầng ${boxData.layerIndex})
+        `;
+        if (panel.scrollIntoView) panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+
+      // Show Floating HUD Toolbar on 3D Viewport
+      const hud = document.getElementById('canvas3dWidget');
+      if (hud) {
+        hud.style.display = 'flex';
+        const nameEl = document.getElementById('canvasWidgetBoxName');
+        if (nameEl) nameEl.innerHTML = `📦 #${boxData.index || 1} <b>${boxData.name}</b> (T${boxData.layerIndex})`;
+      }
+    }
+
+    function deselectBox() {
+      selectedBoxId = null;
+      boxMeshes.forEach(mesh => {
+        if (mesh.material && mesh.material.emissive) {
+          mesh.material.emissive.setHex(0x000000);
+        }
+        if (mesh.userData.edgeLine && mesh.userData.edgeLine.material && mesh.userData.edgeLine.material.color) {
+          mesh.userData.edgeLine.material.color.setHex(0x0f172a);
+        }
+      });
+      const panel = document.getElementById('selectedBoxPanel');
+      if (panel) panel.style.display = 'none';
+      const hud = document.getElementById('canvas3dWidget');
+      if (hud) hud.style.display = 'none';
+    }
+
+    function moveSelectedBox(dx_cm, dy_cm) {
+      if (!selectedBoxId) return;
+      const currentPal = palletsResult[activePalletIndex];
+      if (!currentPal) return;
+
+      const box = currentPal.placed.find(b => b.id === selectedBoxId);
+      if (!box) return;
+
+      const pal = currentPal.palletSpec;
+      box.x = Math.max(0, Math.min(pal.L - box.l, box.x + dx_cm * 10));
+      box.y = Math.max(0, Math.min(pal.W - box.w, box.y + dy_cm * 10));
+
+      reRenderCurrentPallet();
+      selectBoxForCustomEdit(box);
+    }
+
+    function rotateSelectedBoxHoriz() {
+      if (!selectedBoxId) return;
+      const currentPal = palletsResult[activePalletIndex];
+      if (!currentPal) return;
+
+      const box = currentPal.placed.find(b => b.id === selectedBoxId);
+      if (!box) return;
+
+      const pal = currentPal.palletSpec;
+      const tempL = box.l;
+      box.l = box.w;
+      box.w = tempL;
+      box.l_cm = box.l / 10;
+      box.w_cm = box.w / 10;
+
+      // Clamp if out of bounds
+      if (box.x + box.l > pal.L) box.x = Math.max(0, pal.L - box.l);
+      if (box.y + box.w > pal.W) box.y = Math.max(0, pal.W - box.w);
+
+      reRenderCurrentPallet();
+      selectBoxForCustomEdit(box);
+      showAlert(`🔄 Đã xoay ngang thùng: ${box.l_cm} x ${box.w_cm} x ${box.h_cm} cm`, 'success');
+    }
+
+    function rotateSelectedBox3D() {
+      if (!selectedBoxId) return;
+      const currentPal = palletsResult[activePalletIndex];
+      if (!currentPal) return;
+
+      const box = currentPal.placed.find(b => b.id === selectedBoxId);
+      if (!box) return;
+
+      // Cycle 3D dimensions (L -> W -> H -> L)
+      const oldL = box.l, oldW = box.w, oldH = box.h;
+      box.l = oldW;
+      box.w = oldH;
+      box.h = oldL;
+      box.l_cm = box.l / 10;
+      box.w_cm = box.w / 10;
+      box.h_cm = box.h / 10;
+
+      const pal = currentPal.palletSpec;
+      if (box.x + box.l > pal.L) box.x = Math.max(0, pal.L - box.l);
+      if (box.y + box.w > pal.W) box.y = Math.max(0, pal.W - box.w);
+
+      reRenderCurrentPallet();
+      selectBoxForCustomEdit(box);
+      showAlert(`🔄 Đã lật đứng 3D: ${box.l_cm} x ${box.w_cm} x ${box.h_cm} cm`, 'success');
+    }
+
+    function moveSelectedBoxLayer(deltaLayer) {
+      if (!selectedBoxId) return;
+      const currentPal = palletsResult[activePalletIndex];
+      if (!currentPal) return;
+
+      const box = currentPal.placed.find(b => b.id === selectedBoxId);
+      if (!box) return;
+
+      const totalLayers = (currentPal.layers && currentPal.layers.length > 0) ? currentPal.layers.length : 1;
+      const curLayer = box.layerIndex || 1;
+      const newLayerIdx = curLayer + deltaLayer;
+
+      if (deltaLayer < 0 && curLayer <= 1) {
+        showAlert('⚠️ Thùng này đã ở Tầng 1 (đáy pallet), không thể hạ thấp hơn!', 'warning');
+        return;
+      }
+
+      if (newLayerIdx < 1) return;
+
+      if (deltaLayer > 0 && newLayerIdx > totalLayers + 1) {
+        showAlert('⚠️ Đã ở tầng cao nhất!', 'warning');
+        return;
+      }
+
+      box.layerIndex = newLayerIdx;
+
+      // Adjust Z to match target layer
+      if (newLayerIdx === 1) {
+        box.z = 0;
+      } else if (newLayerIdx <= totalLayers) {
+        box.z = currentPal.layers[newLayerIdx - 1].zMin;
+      } else {
+        box.z = currentPal.cargoH || (totalLayers * 200);
+      }
+
+      reRenderCurrentPallet();
+      selectBoxForCustomEdit(box);
+      showAlert(deltaLayer > 0 ? `🔼 Đã chuyển thùng lên Tầng ${box.layerIndex}` : `🔽 Đã chuyển thùng xuống Tầng ${box.layerIndex}`, 'info');
+    }
+
+    function deleteSelectedBox() {
+      if (!selectedBoxId) return;
+      const currentPal = palletsResult[activePalletIndex];
+      if (!currentPal) return;
+
+      const idx = currentPal.placed.findIndex(b => b.id === selectedBoxId);
+      if (idx !== -1) {
+        const deleted = currentPal.placed.splice(idx, 1)[0];
+        deselectBox();
+        reRenderCurrentPallet();
+        showAlert(`🗑️ Đã xóa thùng: ${deleted.name}`, 'warning');
+      }
+    }
+
+    function updateManualStudioOptions() {
+      const skuSelect = document.getElementById('manualSkuSelect');
+      const layerSelect = document.getElementById('manualLayerSelect');
+      if (!skuSelect || !layerSelect) return;
+
+      const skus = getSkuListFromUI();
+      skuSelect.innerHTML = '';
+      skus.forEach((s, idx) => {
+        const opt = document.createElement('option');
+        opt.value = idx;
+        opt.innerText = `${s.name} (${s.l_cm}x${s.w_cm}x${s.h_cm} cm)`;
+        skuSelect.appendChild(opt);
+      });
+
+      layerSelect.innerHTML = '';
+      const currentPal = (palletsResult && palletsResult.length > 0) ? palletsResult[activePalletIndex] : null;
+      const numLayers = (currentPal && currentPal.layers) ? currentPal.layers.length : 1;
+
+      for (let i = 1; i <= Math.max(numLayers, 1); i++) {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.innerText = `Tầng ${i}`;
+        layerSelect.appendChild(opt);
+      }
+      const optNew = document.createElement('option');
+      optNew.value = numLayers + 1;
+      optNew.innerText = `+ Tạo Tầng Mới (${numLayers + 1})`;
+      layerSelect.appendChild(optNew);
+
+      // Populate Layer Swapping Dropdowns (swapLayerSelectA & swapLayerSelectB)
+      const swapA = document.getElementById('swapLayerSelectA');
+      const swapB = document.getElementById('swapLayerSelectB');
+      if (swapA && swapB) {
+        swapA.innerHTML = '';
+        swapB.innerHTML = '';
+        for (let i = 1; i <= Math.max(numLayers, 1); i++) {
+          const lObj = currentPal && currentPal.layers && currentPal.layers[i - 1];
+          const countInfo = lObj ? ` (${lObj.count} thùng)` : '';
+          const optA = document.createElement('option');
+          optA.value = i;
+          optA.innerText = `Tầng ${i}${countInfo}`;
+          if (i === 1) optA.selected = true;
+          swapA.appendChild(optA);
+
+          const optB = document.createElement('option');
+          optB.value = i;
+          optB.innerText = `Tầng ${i}${countInfo}`;
+          if (i === Math.min(2, numLayers)) optB.selected = true;
+          swapB.appendChild(optB);
+        }
+      }
+
+      // Populate Direct Layer Selector for selected box
+      const directLayerSelect = document.getElementById('selectedBoxLayerDirectSelect');
+      if (directLayerSelect) {
+        directLayerSelect.innerHTML = '';
+        for (let i = 1; i <= Math.max(numLayers, 1); i++) {
+          const opt = document.createElement('option');
+          opt.value = i;
+          opt.innerText = `Tầng ${i}`;
+          directLayerSelect.appendChild(opt);
+        }
+        const optNew2 = document.createElement('option');
+        optNew2.value = numLayers + 1;
+        optNew2.innerText = `+ Tầng Mới (${numLayers + 1})`;
+        directLayerSelect.appendChild(optNew2);
+      }
+
+      onManualSkuSelectChange();
+    }
+
+    function onManualSkuSelectChange() {
+      const skuSelect = document.getElementById('manualSkuSelect');
+      const oriSelect = document.getElementById('manualOriSelect');
+      if (!skuSelect || !oriSelect) return;
+
+      const skus = getSkuListFromUI();
+      const s = skus[parseInt(skuSelect.value) || 0];
+      if (!s) return;
+
+      const oris = getBoxOrientations(s.l, s.w, s.h, true);
+      oriSelect.innerHTML = '';
+      oris.forEach((ori, idx) => {
+        const opt = document.createElement('option');
+        opt.value = JSON.stringify(ori);
+        const l_cm = (ori.l/10).toFixed(1);
+        const w_cm = (ori.w/10).toFixed(1);
+        const h_cm = (ori.h/10).toFixed(1);
+        let label = `Hướng ${idx+1}: ${l_cm} x ${w_cm} x ${h_cm} cm`;
+        if (idx === 0) label += ' (Nằm)';
+        else if (idx === 1) label += ' (Xoay 90°)';
+        else if (ori.h > s.h) label += ' (Đứng)';
+        opt.innerText = label;
+        oriSelect.appendChild(opt);
+      });
+    }
+
+    function manualAutoPlaceNext() {
+      const currentPal = (palletsResult && palletsResult.length > 0) ? palletsResult[activePalletIndex] : null;
+      if (!currentPal) return;
+
+      const oriSelect = document.getElementById('manualOriSelect');
+      const layerSelect = document.getElementById('manualLayerSelect');
+      if (!oriSelect || !layerSelect) return;
+
+      const ori = JSON.parse(oriSelect.value || '{}');
+      const targetLayer = parseInt(layerSelect.value) || 1;
+      const pal = currentPal.palletSpec;
+
+      // Find boxes in this layer
+      const layerBoxes = currentPal.placed.filter(b => b.layerIndex === targetLayer);
+
+      // Generate candidate points
+      const candidates = [{ x: 0, y: 0 }];
+      layerBoxes.forEach(b => {
+        candidates.push({ x: b.x + b.l, y: b.y });
+        candidates.push({ x: b.x, y: b.y + b.w });
+        candidates.push({ x: b.x + b.l, y: b.y + b.w });
+      });
+
+      candidates.sort((a, b) => (a.y === b.y ? a.x - b.x : a.y - b.y));
+
+      for (const pt of candidates) {
+        if (pt.x + ori.l <= pal.L && pt.y + ori.w <= pal.W) {
+          // Check collision with layerBoxes
+          const testBox = { x: pt.x, y: pt.y, l: ori.l, w: ori.w };
+          const collide = layerBoxes.some(b => checkCollision2D(testBox, b));
+          if (!collide) {
+            document.getElementById('manualPosX').value = (pt.x / 10).toFixed(1);
+            document.getElementById('manualPosY').value = (pt.y / 10).toFixed(1);
+            showAlert(`🎯 Đã tìm được vị trí khít gần nhất: X = ${(pt.x/10).toFixed(1)} cm, Y = ${(pt.y/10).toFixed(1)} cm`, 'success');
+            return;
+          }
+        }
+      }
+      showAlert('⚠️ Không tìm thấy vị trí trống hoàn toàn trên tầng này. Bạn có thể tự gõ tọa độ mong muốn!', 'warning');
+    }
+
+    function manualAddBoxToPallet() {
+      if (!palletsResult || palletsResult.length === 0) {
+        // Create initial pallet if empty
+        applyPreset(1500, 900, 150, 1200, 1200);
+        runPacking(false);
+      }
+
+      const currentPal = palletsResult[activePalletIndex];
+      if (!currentPal) return;
+
+      const skuSelect = document.getElementById('manualSkuSelect');
+      const layerSelect = document.getElementById('manualLayerSelect');
+      const oriSelect = document.getElementById('manualOriSelect');
+      const posXInput = document.getElementById('manualPosX');
+      const posYInput = document.getElementById('manualPosY');
+
+      const skus = getSkuListFromUI();
+      const s = (skus && skus.length > 0) ? (skus[parseInt(skuSelect.value)] || skus[0]) : { name: 'Thùng Tùy Chọn', l: 400, w: 300, h: 200, wt: 10, color: '#3b82f6' };
+      let ori;
+      try {
+        ori = JSON.parse(oriSelect.value);
+      } catch(e) {
+        ori = { l: s.l, w: s.w, h: s.h };
+      }
+      if (!ori.l) ori = { l: s.l, w: s.w, h: s.h };
+      const targetLayer = parseInt(layerSelect.value) || 1;
+      const posX_mm = Math.round(parseFloat(posXInput.value || 0) * 10);
+      const posY_mm = Math.round(parseFloat(posYInput.value || 0) * 10);
+
+      // Determine Z coordinate
+      let targetZ = 0;
+      if (currentPal.layers && targetLayer <= currentPal.layers.length) {
+        targetZ = currentPal.layers[targetLayer - 1].zMin;
+      } else if (currentPal.layers && currentPal.layers.length > 0) {
+        const topLayer = currentPal.layers[currentPal.layers.length - 1];
+        targetZ = topLayer.zMax;
+      }
+
+      const newBox = {
+        id: 'MAN_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+        name: s.name,
+        l: ori.l,
+        w: ori.w,
+        h: ori.h,
+        l_cm: ori.l / 10,
+        w_cm: ori.w / 10,
+        h_cm: ori.h / 10,
+        wt: s.wt,
+        color: s.color,
+        x: posX_mm,
+        y: posY_mm,
+        z: targetZ,
+        layerIndex: targetLayer
+      };
+
+      currentPal.placed.push(newBox);
+      reRenderCurrentPallet();
+      selectBoxForCustomEdit(newBox);
+      showAlert(`✅ Đã đặt thành công ${newBox.name} (${newBox.l_cm}x${newBox.w_cm}x${newBox.h_cm} cm) vào Tầng ${targetLayer}!`, 'success');
+    }
+
+    function manualApplyDunnageSquaring() {
+      const currentPal = (palletsResult && palletsResult.length > 0) ? palletsResult[activePalletIndex] : null;
+      if (!currentPal || currentPal.placed.length === 0) {
+        showAlert('⚠️ Pallet đang trống, vui lòng thêm thùng hàng trước khi chèn chêm!', 'warning');
+        return;
+      }
+
+      // Compute bounding box
+      const boundL = Math.max(...currentPal.placed.map(p => p.x + p.l));
+      const boundW = Math.max(...currentPal.placed.map(p => p.y + p.w));
+
+      currentPal.dunnage = [];
+      currentPal.layers.forEach((lyr, lIdx) => {
+        const sqDuns = generateCuboidSquaringBlocks(boundL, boundW, lyr.boxes, lyr.zMin, lyr.height, lIdx + 1);
+        lyr.dunnage = sqDuns;
+        currentPal.dunnage.push(...sqDuns);
+      });
+
+      reRenderCurrentPallet();
+      showAlert(`📦 Đã tự động chèn ${currentPal.dunnage.length} khối bìa carton vuông vức các cạnh!`, 'success');
+    }
+
+    function clearAllBoxesFromPallet() {
+      if (!confirm('Bạn có chắc chắn muốn xóa toàn bộ hàng trên Pallet này để tự tay sắp xếp lại từ đầu?')) return;
+      const currentPal = (palletsResult && palletsResult.length > 0) ? palletsResult[activePalletIndex] : null;
+      if (!currentPal) return;
+
+      currentPal.placed = [];
+      currentPal.dunnage = [];
+      currentPal.layers = [];
+      currentPal.cargoL = 0;
+      currentPal.cargoW = 0;
+      currentPal.cargoH = 0;
+      currentPal.totalWeight = 0;
+
+      deselectBox();
+      reRenderCurrentPallet();
+      showAlert('🧹 Đã làm sạch pallet. Bạn có thể bắt đầu tự tay chọn thùng và xếp theo ý riêng!', 'info');
+    }
+
+    function rebuildLayersFromPlaced(pal) {
+      if (!pal || !pal.placed || pal.placed.length === 0) {
+        pal.layers = [];
+        pal.cargoL = 0;
+        pal.cargoW = 0;
+        pal.cargoH = 0;
+        pal.totalWeight = 0;
+        return;
+      }
+
+      // Group placed boxes by z level (tolerance 10mm)
+      const zGroups = {};
+      pal.placed.forEach(b => {
+        let matchedZ = null;
+        for (const zk of Object.keys(zGroups)) {
+          if (Math.abs(b.z - parseFloat(zk)) <= 15) {
+            matchedZ = zk;
+            break;
+          }
+        }
+        if (matchedZ === null) {
+          matchedZ = b.z;
+          zGroups[matchedZ] = [];
+        }
+        zGroups[matchedZ].push(b);
+      });
+
+      const sortedZKeys = Object.keys(zGroups).map(Number).sort((a, b) => a - b);
+      const layers = [];
+      let maxZ = 0, maxX = 0, maxY = 0;
+      let totalWt = 0;
+
+      sortedZKeys.forEach((zk, idx) => {
+        const boxes = zGroups[zk];
+        const layerMaxH = Math.max(...boxes.map(b => b.h));
+        const layerWt = boxes.reduce((sum, b) => sum + b.wt, 0);
+        totalWt += layerWt;
+
+        boxes.forEach(b => {
+          b.layerIndex = idx + 1;
+          if (b.x + b.l > maxX) maxX = b.x + b.l;
+          if (b.y + b.w > maxY) maxY = b.y + b.w;
+          if (b.z + b.h > maxZ) maxZ = b.z + b.h;
+        });
+
+        // Associated dunnage
+        const layerDunnage = (pal.dunnage || []).filter(d => Math.abs(d.z - zk) <= 15);
+        layerDunnage.forEach(d => { d.layerIndex = idx + 1; });
+
+        layers.push({
+          index: idx + 1,
+          name: `Tầng ${idx + 1}`,
+          zMin: zk,
+          zMax: zk + layerMaxH,
+          height: layerMaxH,
+          weight: Math.round(layerWt),
+          boxes: boxes,
+          dunnage: layerDunnage,
+          count: boxes.length,
+          coverage: 100
+        });
+      });
+
+      pal.layers = layers;
+      pal.cargoL = maxX;
+      pal.cargoW = maxY;
+      pal.cargoH = maxZ;
+      pal.totalWeight = totalWt;
+    }
+
+    function reRenderCurrentPallet() {
+      const currentPal = palletsResult[activePalletIndex];
+      if (!currentPal) return;
+
+      rebuildLayersFromPlaced(currentPal);
+      renderCargoBoxesAndDunnage(currentPal);
+      renderLayerButtons(currentPal.layers);
+      updateKPIs(currentPal);
+      renderSummaryCard(currentPal.placed.length, 0);
+      updateManualStudioOptions();
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      try {
+        loadSampleData();
+      } catch (err) {
+        console.error('Lỗi nạp dữ liệu:', err);
+      }
+      try {
+        init3D();
+      } catch (err) {
+        console.error('Lỗi khởi tạo 3D:', err);
+      }
+      try {
+        initCommentSection();
+      } catch (err) {
+        console.error('Lỗi khởi tạo 3D:', err);
+      }
+    });
+  </script>
+</body>
+</html>
